@@ -1,0 +1,26 @@
+{
+  "realm": "federation",
+  "enabled": true,
+  "clientScopes" : [
+    {
+      "id" : "439d9c71-8a8a-469c-9280-058016000cc2",
+      "name" : "fed-mgmt",
+      "protocol": "openid-connect",
+      "description" : "fed-mgmt"
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "originating-op-1",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "dd7vNwFqjNpYwaghlEwMbw10g0klWDHb",
+      "redirectUris": ["http://localhost:8080/*"],
+      "publicClient": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": true,
+      "defaultClientScopes": ["fed-mgmt"],
+      "webOrigins": ["*"]
+    }
+  ]
+}

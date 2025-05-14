@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  federation-manager:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: federation-manager
+    restart: unless-stopped
+    ports:
+      - "8990:8989"
+    volumes:
+      - ./src/conf/config.cfg:/usr/app/src/conf/config.cfg
+    depends_on:
+      - mongodb
+      - keycloak
+  mongodb:
+    image: mongo
+    container_name: mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: federation-manager
+      MONGODB_DATA_DIR: /data/db
+      MONDODB_LOG_DIR: /dev/null
+    volumes:
+      - smdbdata:/data/db
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.1.4
+    container_name: keycloak
+    environment:
+      - KC_BOOTSTRAP_ADMIN_USERNAME=admin
+      - KC_BOOTSTRAP_ADMIN_PASSWORD=admin
+      - KC_IMPORT=/opt/keycloak/data/import/realm-import.json
+    ports:
+      - "8080:8080"
+    command:
+      [ "start-dev", "--import-realm" ]
+    volumes:
+      - ./keycloak/realm-import.json:/opt/keycloak/data/import/realm-import.json
+volumes:
+  smdbdata:
+    driver: local

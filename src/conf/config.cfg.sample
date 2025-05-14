@@ -1,0 +1,47 @@
+[keycloak]
+client1_id = originating-op-1
+client1_secret = dd7vNwFqjNpYwaghlEwMbw10g0klWDHb
+client2_id = originating-op-2
+client2_secret = 2mhznERfWclLDuVojY77Lp4Qd2r4e8Ms
+scope = fed-mgmt
+host = keycloak
+port = 8080
+
+[server]
+host = 127.0.0.1
+port = 8989
+prefix = api
+version = v1.0
+protocol = http
+
+[mongodb]
+host = mongodb
+port = 27017
+
+[i2edge]
+host = 192.168.123.237
+port = 30769
+
+[op_data]
+partnerOPFederationId = i2cat
+partnerOPCountryCode = ES
+partnerOPMobileNetworkCode_MCC = 001
+partnerOPMobileNetworkCode_MNC = 01
+partnerOPFixedNetworkCode = 34
+platformCaps = homeRouting
+edgeDiscoveryServiceEndPoint_port =
+edgeDiscoveryServiceEndPoint_fqdn = discovery.operator1.com
+edgeDiscoveryServiceEndPoint_ipv4Addresses =
+edgeDiscoveryServiceEndPoint_ipv6Addresses =
+lcmServiceEndPoint_port = 8989
+lcmServiceEndPoint_fqdn =
+lcmServiceEndPoint_ipv4Addresses = 127.0.0.1
+lcmServiceEndPoint_ipv6Addresses =
+
+[partner_op]
+# Defines the role of the Federation Manager
+partner_op_host = 127.0.0.1
+partner_op_server = /operatorplatform/federation/v1
+partner_op_port = 8990
+#role = originating_op
+role = partner_op

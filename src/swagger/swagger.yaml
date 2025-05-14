@@ -1,0 +1,4682 @@
+openapi: 3.0.3
+info:
+  title: Federation Management Service
+  description: |
+    # Introduction
+    ---
+    RESTful APIs that allow an OP to share the edge cloud resources and capabilities securely to other partner OPs over E/WBI.
+
+    ---
+    # API Scope
+
+    ---
+    APIs defined in this version of the implementation can be categorized into the following areas:
+    * __FederationManagement__ - Create and manage directed federation relationship with a partner OP
+    * __AvailabilityZoneInfoSynchronization__ - Management of resources of partner OP zones and status updates
+    * __ArtefactManagement__ - Upload, remove, retrieve and update application descriptors, charts and packages over E/WBI towards a partner OP
+    * __ApplicationOnboardingManagement__ - Register, retrieve, update and remove applications over E/WBI towards a partner OP
+    * __ApplicationDeploymentManagement__ - Create, update, retrieve and terminate application instances over E/WBI towards a partner OP
+
+    ---
+    # Definitions
+    ---
+    This section provides definitions of terminologies commonly referred to throughout the API descriptions.
+
+    * __Accepted Zones__ - List of partner OP zones, which the originating OP has confirmed to use for its edge applications.
+    * __Application Provider__ - An application developer, onboarding his/her edge application on a partner operator platform (MEC).
+    * __Artefact__ - Descriptor, charts or any other package associated with the application.
+    * __Availability Zone__ - Zones that partner OP can offer to share with originating OP.
+    * __Device__ - Refers to user equipment like mobile phone, tablet, IOT kit, AR/VR device etc. In context of MEC users use these devices to access edge applications.
+    * __Directed Federation__ - A Federation between two OP instances A and B, in which edge compute resources are shared by B to A, but not from A to B.
+    * __Edge Application__ - Application designed to run on MEC edge cloud.
+    * __E/WBI__ - East west bound interface.
+    * __Federation__ - Relationship among member OPs who agrees to offer services and capabilities to the application providers and end users of member OPs.
+    * __FederationContextId__ - Partner OP defined string identifier representing a certain federation relationship.
+    * __Federation Identifier__ - Identify an operator platform in federation context.
+    * __Flavour__ - A group of compute, network and storage resources that can be requested or granted as a single unit.
+    * __FlavourIdentifier__ - An OP defined string identifier representing a set of compute, storage and networking resources.
+    * __Home OP__ - Used in federation context to identify the OP with which the application developers or user clients are registered.
+    * __Instance__ - Application process running on an edge.
+    * __LCM Service__ - Partner OP service responsible for life cycle management of edge applications. LCM service is defined as HTTP based API endpoint identified by a well-defined FQDN or IP.
+    * __Offered Zones__ - Zones that partner OP offer to share to the Originating OP based on the prior agreement and local configuration.
+    * __Onboarding__ - Submitting an application to MEC platform.
+    * __OP__ - Operator platform.
+    * __OperatorIdentifier__ - String identifier representing the owner of MEC platform. Owner could be an enterprise, a TSP or some other organization.
+    * __Originating OP__ - The OP when initiating the federation creation request towards the partner OP is defined as the Originating OP.
+    * __Partner OP__ - Operator Platform which offers its Edge Cloud capabilities to the other Operator Platforms via E/WBI.
+    * __Resource__ - Compute, networking and storage resources.
+    * __ZoneIdentifier__ - An OP defined string identifier representing a certain geographical or logical area where edge resources and services are provided.
+    * __Zone Confirmation__ - Procedure via which originating OP acknowledges partner OP about the partner zones it wishes to use.
+    * __User Clients__ - Lightweight client applications used to access edge applications. Application users run  these clients on their devices (UE, IOT device, AR/VR device etc).
+
+    ---
+    # API Operations
+    ---
+
+    __FederationManagement__
+    * __CreateFederation__ - Creates a directed federation relationship with a partner OP.
+    * __GetFederationDetails__ - Retrieves details about the federation relationship with the partner OP. The response shall provide info about the zones offered by the partner, partner OP network codes, information about edge discovery and LCM service etc.
+    * __DeleteFederationDetails__ - Remove existing federation with the partner OP.
+    * __NotifyFederationUpdates__ - Call back notification used by partner OP to update originating OP about any change in existing federation relationship.
+    * __UpdateFederation__ - API used by the Originating OP towards the partner OP, to update the parameters associated to the existing federation.
+    * __QueryFederationContext__ - The Originating OP retrieves federationContextId from the partner OP.
+
+    __AvailabilityZoneInfoSynchronization__
+    * __ZoneSubscribe__ - Informs partner OP that originating OP is willing to access the specified zones and partner OP shall reserve compute and network resources for these zones.
+    * __ZoneUnsubscribe__ - Informs partner OP that originating OP will no longer access the specified partner OP zone.
+    * __GetZoneData__ - Retrieves details about the computation and network resources that partner OP has reserved for an partner OP zone.
+    * __Notify Zone Information__ - Call back notification used by partner OP to update originating OP about changes in the resources reserved on a partner zone.
+
+    __ArtefactManagement__
+    * __UploadArtefact__ - Uploads application artefact on partner operator platform.
+    * __RemoveArtefact__ - Removes an artefact from partner operator platform.
+    * __GetArtefact__ - Retrieves details about an artefact from partner operator platform.
+
+    __ApplicationOnboardingManagement__
+    * __OnboardApplication__ - Submits an application details to a partner OP. Based on the details provided,  partner OP shall do bookkeeping, resource validation and other pre-deployment operations.
+    * __UpdateApplication__ - Updates partner OP about changes in application compute resource requirements, QOS Profile, associated descriptor or change in associated components.
+    * __DeboardApplication__ - Removes an application from partner OP.
+    * __ViewApplication__ - Retrieves application details from partner OP.
+    * __OnboardExistingAppNewZones__ - Make an application available on new additional zones.
+    * __LockUnlockApplicationZone__ - Forbid or permit instantiation of application on a zone.
+
+    __Application Instance Lifecycle Management__
+    * __InstallApp__ - Instantiates an application on a partner OP zone.
+    * __GetAppInstanceDetails__ - Retrieves an application instance details from partner OP.
+    * __RemoveApp__ - Terminate an application instance on a partner OP zone.
+    * __GetAllAppInstances__ - Retrieves details about all instances of the application running on partner OP zones.
+
+
+    © 2023 GSM Association.
+    All rights reserved.
+  version: 1.2.0
+externalDocs:
+  description: "GSMA, E/WBI APIs v1.3.1"
+  url: http://www.xxxx.com
+servers:
+- url: "/operatorplatform/federation/v1"
+security:
+- oAuth2ClientCredentials:
+  - fed-mgmt
+paths:
+  /partner:
+    post:
+      tags:
+      - FederationManagement
+      summary: Creates one direction federation with partner operator platform.
+      operationId: create_federation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FederationRequestData'
+        required: true
+      responses:
+        "200":
+          description: Federation meta-info request accepted
+          headers:
+            Location:
+              description: "Contains the URI of the newly created resource, according\
+                \ to the structure: {apiRoot}/operatorplatform/federation/v1/partner/{federationContextId}"
+              required: true
+              style: simple
+              explode: false
+              schema:
+                type: string
+            Accept-Encoding:
+              description: "Accept-Encoding, described in IETF RFC 7694"
+              style: simple
+              explode: false
+              schema:
+                type: string
+            Content-Encoding:
+              description: "Content-Encoding, described in IETF RFC 7231"
+              style: simple
+              explode: false
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FederationResponseData'
+        "400":
+          description: Bad request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "401":
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "404":
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "409":
+          description: Conflict
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "422":
+          description: Unprocessable Entity
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "500":
+          description: Internal Server Error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "503":
+          description: Service Unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "520":
+          description: Web Server Returned an Unknown Error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        default:
+          description: Generic Error
+      callbacks:
+        onPartnerStatusEvent:
+          '{$request.body#/partnerStatusLink }':
+            post:
+              requestBody:
+                description: |
+                  OP uses this callback api to notify partner OP about change in federation status, federation metadata or offered zone details. Allowed combinations of objectType and operationType are
+                  - FEDERATION - STATUS: Status specified by parameter 'federationStatus'.
+                  - ZONES - STATUS: Status specified by parameter 'zoneStatus'.
+                  - ZONES - ADD: Use parameter 'addZones' to define add new zones
+                  - ZONES - REMOVE: Use parameter 'removeZones' to define remove zones.
+                  - EDGE_DISCOVERY_SERVICE - UPDATE: Use parameter 'edgeDiscoverySvcEndPoint' to specify new endpoints
+                  - LCM_SERVICE - UPDATE: Use parameter 'lcmSvcEndPoint' to specify new endpoints
+                  - MOBILE_NETWORK_CODES - ADD: Use parameter 'addMobileNetworkIds' to define new mobile network codes.
+                  - MOBILE_NETWORK_CODES - REMOVE: Use parameter 'removeMobileNetworkIds' to remove mobile network codes.
+                  - FIXED_NETWORK_CODES - ADD: Use parameter 'addFixedNetworkIds' to define new fixed network codes.
+                  - FIXED_NETWORK_CODES - REMOVE: Use parameter 'removeFixedNetworkIds' to remove fixed network codes.
+                  - SERVICE_APIS - ADD/REMOVE: Parameter Usage 'addServiceAPIs / removeServiceAPIs' to add or remove Service APIs support.
+                content:
+                  application/json:
+                    schema:
+                      required:
+                      - federationContextId
+                      - modificationDate
+                      - objectType
+                      - operationType
+                      type: object
+                      properties:
+                        federationContextId:
+                          $ref: '#/components/schemas/FederationIdentifier'
+                        objectType:
+                          type: string
+                          enum:
+                          - FEDERATION
+                          - ZONES
+                          - EDGE_DISCOVERY_SERVICE
+                          - LCM_SERVICE
+                          - MOBILE_NETWORK_CODES
+                          - FIXED_NETWORK_CODES
+                          - SERVICE_APIS
+                        operationType:
+                          type: string
+                          enum:
+                          - STATUS
+                          - UPDATE
+                          - ADD
+                          - REMOVE
+                        edgeDiscoverySvcEndPoint:
+                          $ref: '#/components/schemas/ServiceEndpoint'
+                        lcmSvcEndPoint:
+                          $ref: '#/components/schemas/ServiceEndpoint'
+                        addMobileNetworkIds:
+                          $ref: '#/components/schemas/MobileNetworkIds'
+                        removeMobileNetworkIds:
+                          $ref: '#/components/schemas/MobileNetworkIds'
+                        addFixedNetworkIds:
+                          $ref: '#/components/schemas/FixedNetworkIds'
+                        removeFixedNetworkIds:
+                          $ref: '#/components/schemas/FixedNetworkIds'
+                        addZones:
+                          minItems: 1
+                          type: array
+                          description: "List of zones, which the operator platform\
+                            \ wishes to make available to developers/ISVs of requesting\
+                            \ operator platform."
+                          items:
+                            $ref: '#/components/schemas/ZoneDetails'
+                        removeZones:
+                          minItems: 1
+                          type: array
+                          description: "List of zones, which the operator platform\
+                            \ no longer wishes to share."
+                          items:
+                            $ref: '#/components/schemas/ZoneIdentifier'
+                        addServiceAPIs:
+                          $ref: '#/components/schemas/serviceAPINames'
+                        removeServiceAPIs:
+                          $ref: '#/components/schemas/serviceAPINames'
+                        zoneStatus:
+                          minItems: 1
+                          type: array
+                          items:
+                            required:
+                            - status
+                            - zoneId
+                            type: object
+                            properties:
+                              zoneId:
+                                $ref: '#/components/schemas/ZoneIdentifier'
+                              status:
+                                $ref: '#/components/schemas/Status'
+                        federationStatus:
+                          $ref: '#/components/schemas/Status'
+                        modificationDate:
+                          type: string
+                          description: Date and time of the federation modification
+                            by the originating partner OP
+                          format: date-time
+              responses:
+                "204":
+                  description: Expected response to a successful call back processing
+                "400":
+                  description: Bad request
+                  content:
+                    application/problem+json:
+                      schema:
+                        $ref: '#/components/schemas/ProblemDetails'
+                "401":
+                  description: Unauthorized
+                  content:
+                    application/problem+json:
+                      schema:
+                        $ref: '#/components/schemas/ProblemDetails'
+                "404":
+                  description: Not Found
+                  content:
+                    application/problem+json:
+                      schema:
+                        $ref: '#/components/schemas/ProblemDetails'
+                "409":
+                  description: Conflict
+                  content:
+                    application/problem+json:
+                      schema:
+                        $ref: '#/components/schemas/ProblemDetails'
+                "422":
+                  description: Unprocessable Entity
+                  content:
+                    application/problem+json:
+                      schema:
+                        $ref: '#/components/schemas/ProblemDetails'
+                "500":
+                  description: Internal Server Error
+                  content:
+                    application/problem+json:
+                      schema:
+                        $ref: '#/components/schemas/ProblemDetails'
+                "503":
+                  description: Service Unavailable
+                  content:
+                    application/problem+json:
+                      schema:
+                        $ref: '#/components/schemas/ProblemDetails'
+                "520":
+                  description: Web Server Returned an Unknown Error
+                  content:
+                    application/problem+json:
+                      schema:
+                        $ref: '#/components/schemas/ProblemDetails'
+                default:
+                  description: Generic Error
+      x-openapi-router-controller: controllers.federation_management_controller
+  /{federationContextId}/partner:
+    get:
+      tags:
+      - FederationManagement
+      summary: "Retrieves details about the federation context with the partner OP.\
+        \ The response shall provide info about the zones offered by the partner,\
+        \ partner OP network codes, information about edge discovery and LCM service\
+        \ etc."
+      operationId: get_federation_details
+      parameters:
+      - name: federationContextId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/FederationContextId'
+      responses:
+        "200":
+          description: Federation meta-info request accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_1'
+        "400":
+          description: Bad request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "401":
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "404":
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "409":
+          description: Conflict
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "422":
+          description: Unprocessable Entity
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "500":
+          description: Internal Server Error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "503":
+          description: Service Unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "520":
+          description: Web Server Returned an Unknown Error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        default:
+          description: Generic Error
+      x-openapi-router-controller: controllers.federation_management_controller
+    delete:
+      tags:
+      - FederationManagement
+      summary: Remove existing federation with the partner OP
+      operationId: delete_federation_details
+      parameters:
+      - name: federationContextId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/FederationContextId'
+      responses:
+        "200":
+          description: Federation removed successfully
+        "400":
+          description: Bad request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "401":
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "404":
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "409":
+          description: Conflict
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "422":
+          description: Unprocessable Entity
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "500":
+          description: Internal Server Error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "503":
+          description: Service Unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "520":
+          description: Web Server Returned an Unknown Error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        default:
+          description: Generic Error
+      x-openapi-router-controller: controllers.federation_management_controller
+    patch:
+      tags:
+      - FederationManagement
+      summary: "API used by the Originating OP towards the partner OP, to update the\
+        \ parameters associated to the existing federation"
+      operationId: update_federation
+      parameters:
+      - name: federationContextId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/FederationContextId'
+      requestBody:
+        description: Details about changes origination OP wished to apply
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/federationContextId_partner_body'
+        required: true
+      responses:
+        "200":
+          description: Federation meta-info request accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_1'
+        "400":
+          description: Bad request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "401":
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "404":
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "409":
+          description: Conflict
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "422":
+          description: Unprocessable Entity
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "500":
+          description: Internal Server Error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "503":
+          description: Service Unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "520":
+          description: Web Server Returned an Unknown Error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        default:
+          description: Generic Error
+      x-openapi-router-controller: controllers.federation_management_controller
+  /fed-context-id:
+    get:
+      tags:
+      - FederationManagement
+      summary: Retrieves the existing federationContextId with partner operator platform.
+      operationId: get_federation_context_id
+      responses:
+        "200":
+          description: Federation context identifier retrieval request accepted
+          headers:
+            Location:
+              description: "Contains the URI of the existing resource, according to\
+                \ the structure: {apiRoot}/operatorplatform/federation/v1/partner/{federationContextId}"
+              required: true
+              style: simple
+              explode: false
+              schema:
+                type: string
+            Accept-Encoding:
+              description: "Accept-Encoding, described in IETF RFC 7694"
+              style: simple
+              explode: false
+              schema:
+                type: string
+            Content-Encoding:
+              description: "Content-Encoding, described in IETF RFC 7231"
+              style: simple
+              explode: false
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_2'
+        "400":
+          description: Bad request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "401":
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "404":
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "409":
+          description: Conflict
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "422":
+          description: Unprocessable Entity
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "500":
+          description: Internal Server Error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "503":
+          description: Service Unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "520":
+          description: Web Server Returned an Unknown Error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        default:
+          description: Generic Error
+      x-openapi-router-controller: controllers.federation_management_controller
+  /{federationContextId}/zones:
+    post:
+      tags:
+      - AvailabilityZoneInfoSynchronization
+      summary: Originating OP informs partner OP that it is willing to access the
+        specified zones and partner OP shall reserve compute and network resources
+        for these zones.
+      operationId: zone_subscribe
+      parameters:
+      - name: federationContextId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/FederationContextId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ZoneRegistrationRequestData'
+        required: true
+      responses:
+        "200":
+          description: Zone registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ZoneRegistrationResponseData'
+        "400":
+          description: Bad request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "401":
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "404":
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "409":
+          description: Conflict
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "422":
+          description: Unprocessable Entity
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "500":
+          description: Internal Server Error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "503":
+          description: Service Unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "520":
+          description: Web Server Returned an Unknown Error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        default:
+          description: Generic Error
+      callbacks:
+        onZoneResourceUpdateEvent:
+          '{$request.body#/availZoneNotifLink}':
+            post:
+              requestBody:
+                description: Notification about resource availability.
+                content:
+                  application/json:
+                    schema:
+                      required:
+                      - federationContextId
+                      - zoneId
+                      - zoneResUpdInfo
+                      type: object
+                      properties:
+                        federationContextId:
+                          $ref: '#/components/schemas/FederationIdentifier'
+                        zoneId:
+                          $ref: '#/components/schemas/ZoneIdentifier'
+                        zoneResUpdInfo:
+                          type: array
+                          items:
+                            minProperties: 1
+                            type: object
+                            properties:
+                              availableCompResources:
+                                minItems: 1
+                                type: array
+                                description: Resources exclusively reserved for the
+                                  originator OP.
+                                items:
+                                  $ref: '#/components/schemas/ComputeResourceInfo'
+                              availableNetResources:
+                                minProperties: 1
+                                type: object
+                                properties:
+                                  egressBandWidth:
+                                    type: integer
+                                    description: Max dl throughput that this edge
+                                      can offer. It is defined in Mbps.
+                                    format: int32
+                                  dedicatedNIC:
+                                    type: integer
+                                    format: int32
+                                  supportSriov:
+                                    type: boolean
+                                    description: If this zone support SRIOV networks
+                                      or not
+                                  supportDPDK:
+                                    type: boolean
+                                    description: If this zone supports DPDK based
+                                      networking
+              responses:
+                "200":
+                  description: Zone info notification acknowledged
+                "400":
+                  description: Bad request
+                  content:
+                    application/problem+json:
+                      schema:
+                        $ref: '#/components/schemas/ProblemDetails'
+                "401":
+                  description: Unauthorized
+                  content:
+                    application/problem+json:
+                      schema:
+                        $ref: '#/components/schemas/ProblemDetails'
+                "404":
+                  description: Not Found
+                  content:
+                    application/problem+json:
+                      schema:
+                        $ref: '#/components/schemas/ProblemDetails'
+                "409":
+                  description: Conflict
+                  content:
+                    application/problem+json:
+                      schema:
+                        $ref: '#/components/schemas/ProblemDetails'
+                "422":
+                  description: Unprocessable Entity
+                  content:
+                    application/problem+json:
+                      schema:
+                        $ref: '#/components/schemas/ProblemDetails'
+                "500":
+                  description: Internal Server Error
+                  content:
+                    application/problem+json:
+                      schema:
+                        $ref: '#/components/schemas/ProblemDetails'
+                "503":
+                  description: Service Unavailable
+                  content:
+                    application/problem+json:
+                      schema:
+                        $ref: '#/components/schemas/ProblemDetails'
+                "520":
+                  description: Web Server Returned an Unknown Error
+                  content:
+                    application/problem+json:
+                      schema:
+                        $ref: '#/components/schemas/ProblemDetails'
+                default:
+                  description: Generic Error
+      x-openapi-router-controller: controllers.availability_zone_info_synchronization_controller
+  /{federationContextId}/zones/{zoneId}:
+    get:
+      tags:
+      - AvailabilityZoneInfoSynchronization
+      summary: Retrieves details about the computation and network resources that
+        partner OP has reserved for this zone.
+      operationId: get_zone_data
+      parameters:
+      - name: federationContextId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/FederationContextId'
+      - name: zoneId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/ZoneIdentifier'
+      responses:
+        "200":
+          description: Zone metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ZoneRegisteredData'
+        "400":
+          description: Bad request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "401":
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "404":
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "409":
+          description: Conflict
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "422":
+          description: Unprocessable Entity
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "500":
+          description: Internal Server Error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "503":
+          description: Service Unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "520":
+          description: Web Server Returned an Unknown Error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        default:
+          description: Generic Error
+      x-openapi-router-controller: controllers.availability_zone_info_synchronization_controller
+    delete:
+      tags:
+      - AvailabilityZoneInfoSynchronization
+      summary: Assert usage of a partner OP zone. Originating OP informs partner OP
+        that it will no longer access the specified zone.
+      operationId: zone_unsubscribe
+      parameters:
+      - name: federationContextId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/FederationContextId'
+      - name: zoneId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/ZoneIdentifier'
+      responses:
+        "200":
+          description: Zone deregistered successfully
+        "400":
+          description: Bad request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "401":
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "404":
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "409":
+          description: Conflict
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "422":
+          description: Unprocessable Entity
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "500":
+          description: Internal Server Error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "503":
+          description: Service Unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "520":
+          description: Web Server Returned an Unknown Error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        default:
+          description: Generic Error
+      x-openapi-router-controller: controllers.availability_zone_info_synchronization_controller
+  /{federationContextId}/artefact:
+    post:
+      tags:
+      - ArtefactManagement
+      summary: Uploads application artefact on partner OP. Artefact is a zip file
+        containing scripts and/or packaging files like Terraform or Helm which are
+        required to create an instance of an application.
+      operationId: upload_artefact
+      parameters:
+      - name: federationContextId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/FederationContextId'
+      requestBody:
+        description: An application can consist of multiple components. App providers
+          are allowed to define separate artefacts for each component or they could
+          define a consolidated artefact at application level.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                artefactId:
+                  $ref: '#/components/schemas/ArtefactId'
+                appProviderId:
+                  $ref: '#/components/schemas/AppProviderId'
+                artefactName:
+                  type: string
+                  pattern: ^[A-Za-z][A-Za-z0-9_]{7,31}$
+                  description: Name of the artefact.
+                artefactVersionInfo:
+                  type: string
+                  description: Artefact version information
+                artefactDescription:
+                  type: string
+                  maxLength: 256
+                  description: Brief description of the artefact by the application provider
+                artefactVirtType:
+                  type: string
+                  enum:
+                    - VM_TYPE
+                    - CONTAINER_TYPE
+                artefactFileName:
+                  type: string
+                  minLength: 8
+                  maxLength: 32
+                  description: Name of the file.
+                artefactFileFormat:
+                  type: string
+                  enum:
+                    - WINZIP
+                    - TAR
+                    - TEXT
+                    - TARGZ
+                  description: Artefacts like Helm charts or Terraform scripts may need compressed format.
+                artefactDescriptorType:
+                  type: string
+                  enum:
+                    - HELM
+                    - TERRAFORM
+                    - ANSIBLE
+                    - SHELL
+                    - COMPONENTSPEC
+                  description: Type of descriptor present in the artefact.  App provider can either define either a Helm chart or a Terraform script or container spec.
+                repoType:
+                  type: string
+                  enum:
+                    - PRIVATEREPO
+                    - PUBLICREPO
+                    - UPLOAD
+                  description: Artefact or file repository location. PUBLICREPO is used of public URLs like GitHub, Helm repo, docker registry etc., PRIVATEREPO is used for private repo managed by the application developer, UPLOAD is for the case when artefact/file is uploaded from MEC web portal. OP should pull the image from ‘repoUrl' immediately after receiving the request and then send back the response. In case the repoURL corresponds to a docker registry, use docker v2 http api to do the pull.
+                artefactRepoLocation:
+                  $ref: '#/components/schemas/ObjectRepoLocation'
+                artefactFile:
+                  type: string
+                  format: binary
+                  description: Helm archive/Terraform archive/container spec file or Binary image associated with an application component.
+                componentSpec:
+                  description: Details about compute, networking and storage requirements for each component of the application. App provider should define all information needed to instantiate the component. If artefact is being defined at component level this section should have information just about the component. In case the artefact is being defined at application level the section should provide details about all the components.
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/ComponentSpec'
+                  minItems: 1
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/federationContextId_artefact_body'
+        required: true
+      responses:
+        "200":
+          description: Artefact uploaded successfully
+        "400":
+          description: Bad request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "401":
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "404":
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "409":
+          description: Conflict
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "422":
+          description: Unprocessable Entity
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "500":
+          description: Internal Server Error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "503":
+          description: Service Unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "520":
+          description: Web Server Returned an Unknown Error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        default:
+          description: Generic Error
+      x-openapi-router-controller: controllers.artefact_management_controller
+  /{federationContextId}/artefact/{artefactId}:
+    get:
+      tags:
+      - ArtefactManagement
+      summary: Retrieves details about an artefact.
+      operationId: get_artefact
+      parameters:
+      - name: federationContextId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/FederationContextId'
+      - name: artefactId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/ArtefactId'
+      responses:
+        "200":
+          description: Artefact details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_5'
+        "400":
+          description: Bad request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "401":
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "404":
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "409":
+          description: Conflict
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "422":
+          description: Unprocessable Entity
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "500":
+          description: Internal Server Error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "503":
+          description: Service Unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "520":
+          description: Web Server Returned an Unknown Error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        default:
+          description: Generic Error
+      x-openapi-router-controller: controllers.artefact_management_controller
+    delete:
+      tags:
+      - ArtefactManagement
+      summary: Removes an artefact from partner OP.
+      operationId: remove_artefact
+      parameters:
+      - name: federationContextId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/FederationContextId'
+      - name: artefactId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/ArtefactId'
+      responses:
+        "200":
+          description: Artefact deletion successful
+        "400":
+          description: Bad request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "401":
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "404":
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "409":
+          description: Conflict
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "422":
+          description: Unprocessable Entity
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "500":
+          description: Internal Server Error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "503":
+          description: Service Unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "520":
+          description: Web Server Returned an Unknown Error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        default:
+          description: Generic Error
+      x-openapi-router-controller: controllers.artefact_management_controller
+  /{federationContextId}/application/onboarding:
+    post:
+      tags:
+      - ApplicationOnboardingManagement
+      summary: "Submits an application details to a partner OP. Based on the details\
+        \ provided,  partner OP shall do bookkeeping, resource validation and other\
+        \ pre-deployment operations."
+      operationId: onboard_application
+      parameters:
+      - name: federationContextId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/FederationContextId'
+      requestBody:
+        description: "Details about application compute resource requirements, associated\
+          \ artefacts, QoS profile and regions where application shall be made available\
+          \ etc."
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/application_onboarding_body'
+        required: true
+      responses:
+        "202":
+          description: Application onboarded request accepted
+        "400":
+          description: Bad request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "401":
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "404":
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "409":
+          description: Conflict
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "422":
+          description: Unprocessable Entity
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "500":
+          description: Internal Server Error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "503":
+          description: Service Unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "520":
+          description: Web Server Returned an Unknown Error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        default:
+          description: Generic Error
+      callbacks:
+        onApplicationOnboardStatusEvent:
+          '{$request.body#/appStatusCallbackLink}':
+            post:
+              requestBody:
+                description: Notification payload.
+                content:
+                  application/json:
+                    schema:
+                      required:
+                      - appId
+                      - federationContextId
+                      - statusInfo
+                      type: object
+                      properties:
+                        federationContextId:
+                          $ref: '#/components/schemas/FederationIdentifier'
+                        appId:
+                          $ref: '#/components/schemas/AppIdentifier'
+                        statusInfo:
+                          minItems: 1
+                          type: array
+                          items:
+                            required:
+                            - onboardStatusInfo
+                            - zoneId
+                            type: object
+                            properties:
+                              zoneId:
+                                $ref: '#/components/schemas/ZoneIdentifier'
+                              onboardStatusInfo:
+                                type: string
+                                description: Defines change in application status.
+                                  This change could be related to application itself
+                                  or an application instance status
+                                enum:
+                                - PENDING
+                                - ONBOARDED
+                                - DEBOARDING
+                                - REMOVED
+                                - FAILED
+              responses:
+                "204":
+                  description: Application status updated
+                "400":
+                  description: Bad request
+                  content:
+                    application/problem+json:
+                      schema:
+                        $ref: '#/components/schemas/ProblemDetails'
+                "401":
+                  description: Unauthorized
+                  content:
+                    application/problem+json:
+                      schema:
+                        $ref: '#/components/schemas/ProblemDetails'
+                "404":
+                  description: Not Found
+                  content:
+                    application/problem+json:
+                      schema:
+                        $ref: '#/components/schemas/ProblemDetails'
+                "409":
+                  description: Conflict
+                  content:
+                    application/problem+json:
+                      schema:
+                        $ref: '#/components/schemas/ProblemDetails'
+                "422":
+                  description: Unprocessable Entity
+                  content:
+                    application/problem+json:
+                      schema:
+                        $ref: '#/components/schemas/ProblemDetails'
+                "500":
+                  description: Internal Server Error
+                  content:
+                    application/problem+json:
+                      schema:
+                        $ref: '#/components/schemas/ProblemDetails'
+                "503":
+                  description: Service Unavailable
+                  content:
+                    application/problem+json:
+                      schema:
+                        $ref: '#/components/schemas/ProblemDetails'
+                "520":
+                  description: Web Server Returned an Unknown Error
+                  content:
+                    application/problem+json:
+                      schema:
+                        $ref: '#/components/schemas/ProblemDetails'
+                default:
+                  description: Generic Error
+      x-openapi-router-controller: controllers.application_onboarding_management_controller
+  /{federationContextId}/application/onboarding/app/{appId}:
+    get:
+      tags:
+      - ApplicationOnboardingManagement
+      summary: Retrieves application details from partner OP
+      operationId: view_application
+      parameters:
+      - name: federationContextId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/FederationContextId'
+      - name: appId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/AppIdentifier'
+      responses:
+        "200":
+          description: Application details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_7'
+        "400":
+          description: Bad request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "401":
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "404":
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "409":
+          description: Conflict
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "422":
+          description: Unprocessable Entity
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "500":
+          description: Internal Server Error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "503":
+          description: Service Unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "520":
+          description: Web Server Returned an Unknown Error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        default:
+          description: Generic Error
+      x-openapi-router-controller: controllers.application_onboarding_management_controller
+    delete:
+      tags:
+      - ApplicationOnboardingManagement
+      summary: "Deboards the application from any zones, if any, and deletes the App."
+      operationId: delete_app
+      parameters:
+      - name: federationContextId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/FederationContextId'
+      - name: appId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/AppIdentifier'
+      responses:
+        "200":
+          description: App deletion successful
+        "400":
+          description: Bad request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "401":
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "404":
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "409":
+          description: Conflict
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "422":
+          description: Unprocessable Entity
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "500":
+          description: Internal Server Error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "503":
+          description: Service Unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "520":
+          description: Web Server Returned an Unknown Error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        default:
+          description: Generic Error
+      x-openapi-router-controller: controllers.application_onboarding_management_controller
+    patch:
+      tags:
+      - ApplicationOnboardingManagement
+      summary: "Updates partner OP about changes in application compute resource requirements,\
+        \ QOS Profile, associated descriptor or change in associated components"
+      operationId: update_application
+      parameters:
+      - name: federationContextId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/FederationContextId'
+      - name: appId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/AppIdentifier'
+      requestBody:
+        description: "Details about application compute resource requirements, associated\
+          \ artefact and QOS profile that needs to be updated."
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/app_appId_body'
+        required: true
+      responses:
+        "202":
+          description: Application update request accepted
+        "400":
+          description: Bad request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "401":
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "404":
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "409":
+          description: Conflict
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "422":
+          description: Unprocessable Entity
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "500":
+          description: Internal Server Error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "503":
+          description: Service Unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "520":
+          description: Web Server Returned an Unknown Error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        default:
+          description: Generic Error
+      x-openapi-router-controller: controllers.application_onboarding_management_controller
+  /{federationContextId}/application/lcm:
+    post:
+      tags:
+      - ApplicationDeploymentManagement
+      summary: Instantiates an application on a partner OP zone.
+      operationId: install_app
+      parameters:
+      - name: federationContextId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/FederationContextId'
+      requestBody:
+        description: Details about application and zones where application instance
+          should be created. It also definea call back URI which the partner OP shall
+          use update home OP about a change in instance status.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/application_lcm_body'
+      responses:
+        "202":
+          description: Application instance creation request accepted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_202'
+        "400":
+          description: Bad request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "401":
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "404":
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "409":
+          description: Conflict
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "422":
+          description: Unprocessable Entity
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "500":
+          description: Internal Server Error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "503":
+          description: Service Unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "520":
+          description: Web Server Returned an Unknown Error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        default:
+          description: Generic Error
+      callbacks:
+        onInstanceStatusEvent:
+          '{$request.body#/appInstCallbackLink}':
+            post:
+              requestBody:
+                description: Notification payload.
+                content:
+                  application/json:
+                    schema:
+                      required:
+                      - appId
+                      - appInstanceId
+                      - appInstanceInfo
+                      - federationContextId
+                      - zoneId
+                      type: object
+                      properties:
+                        federationContextId:
+                          $ref: '#/components/schemas/FederationIdentifier'
+                        appId:
+                          $ref: '#/components/schemas/AppIdentifier'
+                        appInstanceId:
+                          $ref: '#/components/schemas/InstanceIdentifier'
+                        zoneId:
+                          $ref: '#/components/schemas/ZoneIdentifier'
+                        appInstanceInfo:
+                          minProperties: 1
+                          type: object
+                          properties:
+                            appInstanceState:
+                              type: string
+                              description: Running status of the application instance.
+                              enum:
+                              - PENDING
+                              - READY
+                              - FAILED
+                              - TERMINATING
+                            message:
+                              type: string
+                              description: Event information or failure message.
+                            accesspointInfo:
+                              minItems: 1
+                              type: array
+                              description: Information about the IP and Port exposed
+                                by the OP. Application clients shall use these access
+                                points to reach this application instance
+                              items:
+                                required:
+                                - accessPoints
+                                - interfaceId
+                                type: object
+                                properties:
+                                  interfaceId:
+                                    pattern: "^[A-Za-z0-9][A-Za-z0-9_]{6,30}[A-Za-z0-9]$"
+                                    type: string
+                                    description: This is the interface Identifier
+                                      that app provider defines when application is
+                                      onboarded.
+                                  accessPoints:
+                                    $ref: '#/components/schemas/ServiceEndpoint'
+                        modificationDate:
+                          type: string
+                          description: Date and time of the instance state modification
+                            by partner OP.
+                          format: date-time
+              responses:
+                "204":
+                  description: Application instance state notification acknowledged
+                "400":
+                  description: Bad request
+                  content:
+                    application/problem+json:
+                      schema:
+                        $ref: '#/components/schemas/ProblemDetails'
+                "401":
+                  description: Unauthorized
+                  content:
+                    application/problem+json:
+                      schema:
+                        $ref: '#/components/schemas/ProblemDetails'
+                "404":
+                  description: Not Found
+                  content:
+                    application/problem+json:
+                      schema:
+                        $ref: '#/components/schemas/ProblemDetails'
+                "409":
+                  description: Conflict
+                  content:
+                    application/problem+json:
+                      schema:
+                        $ref: '#/components/schemas/ProblemDetails'
+                "422":
+                  description: Unprocessable Entity
+                  content:
+                    application/problem+json:
+                      schema:
+                        $ref: '#/components/schemas/ProblemDetails'
+                "500":
+                  description: Internal Server Error
+                  content:
+                    application/problem+json:
+                      schema:
+                        $ref: '#/components/schemas/ProblemDetails'
+                "503":
+                  description: Service Unavailable
+                  content:
+                    application/problem+json:
+                      schema:
+                        $ref: '#/components/schemas/ProblemDetails'
+                "520":
+                  description: Web Server Returned an Unknown Error
+                  content:
+                    application/problem+json:
+                      schema:
+                        $ref: '#/components/schemas/ProblemDetails'
+                default:
+                  description: Generic Error
+      x-openapi-router-controller: controllers.application_deployment_management_controller
+  /{federationContextId}/application/lcm/app/{appId}/instance/{appInstanceId}/zone/{zoneId}:
+    get:
+      tags:
+      - ApplicationDeploymentManagement
+      summary: Retrieves an application instance details from partner OP.
+      operationId: get_app_instance_details
+      parameters:
+      - name: federationContextId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/FederationContextId'
+      - name: appId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/AppIdentifier'
+      - name: appInstanceId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/InstanceIdentifier'
+      - name: zoneId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/ZoneIdentifier'
+      responses:
+        "200":
+          description: Application instance details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_8'
+        "400":
+          description: Bad request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "401":
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "404":
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "409":
+          description: Conflict
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "422":
+          description: Unprocessable Entity
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "500":
+          description: Internal Server Error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "503":
+          description: Service Unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "520":
+          description: Web Server Returned an Unknown Error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        default:
+          description: Generic Error
+      x-openapi-router-controller: controllers.application_deployment_management_controller
+    delete:
+      tags:
+      - ApplicationDeploymentManagement
+      summary: Terminate an application instance on a partner OP zone.
+      operationId: remove_app
+      parameters:
+      - name: federationContextId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/FederationContextId'
+      - name: appId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/AppIdentifier'
+      - name: appInstanceId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/InstanceIdentifier'
+      - name: zoneId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/ZoneIdentifier'
+      responses:
+        "200":
+          description: Application instance termination request accepted
+        "400":
+          description: Bad request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "401":
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "404":
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "409":
+          description: Conflict
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "422":
+          description: Unprocessable Entity
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "500":
+          description: Internal Server Error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "503":
+          description: Service Unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "520":
+          description: Web Server Returned an Unknown Error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        default:
+          description: Generic Error
+      x-openapi-router-controller: controllers.application_deployment_management_controller
+  /{federationContextId}/application/lcm/app/{appId}/appProvider/{appProviderId}:
+    get:
+      tags:
+      - ApplicationDeploymentManagement
+      summary: Retrieves all application instance of partner OP
+      operationId: get_all_app_instances
+      parameters:
+      - name: federationContextId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/FederationContextId'
+      - name: appId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/AppIdentifier'
+      - name: appProviderId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/AppProviderId'
+      responses:
+        "200":
+          description: Application Instance details
+          content:
+            application/json:
+              schema:
+                minItems: 1
+                type: array
+                items:
+                  $ref: '#/components/schemas/inline_response_200_9'
+                x-content-type: application/json
+        "400":
+          description: Bad request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "401":
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "404":
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "409":
+          description: Conflict
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "422":
+          description: Unprocessable Entity
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "500":
+          description: Internal Server Error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "503":
+          description: Service Unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        "520":
+          description: Web Server Returned an Unknown Error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        default:
+          description: Generic Error
+      x-openapi-router-controller: controllers.application_deployment_management_controller
+
+components:
+  schemas:
+    AppIdentifier:
+      pattern: "^[A-Za-z][A-Za-z0-9_]{7,63}$"
+      type: string
+      description: Identifier used to refer to an application.
+    AppProviderId:
+      pattern: "^[A-Za-z][A-Za-z0-9_]{7,63}$"
+      type: string
+      description: UserId of the app provider.  Identifier is relevant only in context
+        of this federation.
+    ArtefactId:
+      type: string
+      description: A globally unique identifier associated with the artefact. Originating
+        OP generates this identifier when artefact is submitted over NBI.
+      format: uuid
+    CountryCode:
+      pattern: "^[A-Z]{2}$"
+      type: string
+      description: ISO 3166-1 Alpha-2 code for the country of Partner operator
+    CPUArchType:
+      type: string
+      description: "CPU Instruction Set Architecture (ISA) E.g., Intel, Arm etc."
+      enum:
+      - ISA_X86
+      - ISA_X86_64
+      - ISA_ARM_64
+    InstanceIdentifier:
+      #pattern: "^[A-Za-z0-9][A-Za-z0-9_]{6,62}[A-Za-z0-9]$"
+      type: string
+      description: Unique identifier generated by the partner OP to identify an instance
+        of the application on a specific zone.
+    InstanceState:
+      type: string
+      description: Running status of the application instance.
+      enum:
+      - PENDING
+      - READY
+      - FAILED
+      - TERMINATING
+    Ipv4Addr:
+      pattern: "^(([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])$"
+      type: string
+      example: 198.51.100.1
+    Ipv6Addr:
+      type: string
+      example: 2001:db8:85a3::8a2e:370:7334
+      allOf:
+      - pattern: "^((:|(0?|([1-9a-f][0-9a-f]{0,3}))):)((0?|([1-9a-f][0-9a-f]{0,3})):){0,6}(:|(0?|([1-9a-f][0-9a-f]{0,3})))$"
+      - pattern: "^((([^:]+:){7}([^:]+))|((([^:]+:)*[^:]+)?::(([^:]+:)*[^:]+)?))$"
+    Fqdn:
+      type: string
+    FixedNetworkIds:
+      minItems: 1
+      type: array
+      description: List of network identifier associated with the fixed line network
+        of the operator platform.
+      items:
+        type: string
+    FederationContextId:
+      pattern: "^[A-Za-z0-9][A-Za-z0-9-]*$"
+      type: string
+      description: This identifier shall be provided by the partner OP on successful
+        verification and validation of the federation create request and is used by
+        partner op to identify this newly created federation context. Originating
+        OP shall provide this identifier in any subsequent request towards the partner
+        op.
+      readOnly: true
+    FederationIdentifier:
+      pattern: "^[A-Za-z0-9][A-Za-z0-9-]*$"
+      type: string
+      description: Globally unique identifier allocated to an operator platform. This
+        is valid and used only in context of MEC federation interface.
+    FileId:
+      type: string
+      description: A globally unique identifier associated with the image file. Originating
+        OP generates this identifier when file is uploaded over NBI.
+      format: uuid
+    FlavourId:
+      type: string
+      description: An identifier to refer to a specific combination of compute resources
+    GeoLocation:
+      pattern: "^([-+]?)([\\d]{1,2})((((\\.)([\\d]{1,4}))?(,)))(([-+]?)([\\d]{1,3})((\\\
+        .)([\\d]{1,4}))?)$"
+      type: string
+      description: "Latitude,Longitude as decimal fraction up to 4 digit precision"
+    Mcc:
+      pattern: "^\\d{3}$"
+      type: string
+    Mnc:
+      pattern: "^\\d{2,3}$"
+      type: string
+    Port:
+      minimum: 0
+      type: integer
+    Status:
+      type: string
+      enum:
+      - FAILED
+      - TEMPORARY_FAILURE
+      - AVAILABLE
+      - LOCKED
+      - NOT_AVAILABLE
+    Uri:
+      type: string
+    Vcpu:
+      pattern: "^\\d+((\\.\\d{1,3})|(m))?$"
+      type: string
+      description: "Number of vcpus in whole, decimal up to millivcpu, or millivcpu\
+        \ format."
+      example: "{\"whole\":{\"value\":2},\"decimal\":{\"value\":0.5},\"millivcpu\"\
+        :{\"value\":\"500m\"}}"
+    Version:
+      pattern: "^(\\d{1,2}\\.)?(\\d{1,2}\\.)?(\\d{1,2})$"
+      type: string
+      description: Versioning info in the format major.minor.patch
+    VirtImageType:
+      type: string
+      description: "Indicate if the file is Container image or VM image (QCOW2, OVA)"
+      enum:
+      - QCOW2
+      - DOCKER
+      - OVA
+    ZoneIdentifier:
+      pattern: "^[A-Za-z0-9][A-Za-z0-9-]*$"
+      type: string
+      description: Human readable name of the zone.
+    FederationHealthInfo:
+      required:
+      - federationStatus
+      - numOfAcceptedZones
+      type: object
+      properties:
+        federationStatus:
+          $ref: '#/components/schemas/State'
+        numOfAcceptedZones:
+          type: string
+        numOfActiveAlarms:
+          type: string
+        numOfApplications:
+          type: string
+      example:
+        numOfApplications: numOfApplications
+        federationStatus:
+          alarmState: RAISED
+        numOfActiveAlarms: numOfActiveAlarms
+        numOfAcceptedZones: numOfAcceptedZones
+    FederationSupportedAPIs:
+      required:
+      - artefactAPI
+      - availabilityZoneAPI
+      - edgeApplicationAPI
+      - federationBaseAPI
+      - fileAPI
+      type: object
+      properties:
+        federationBaseAPI:
+          $ref: '#/components/schemas/FederationAPIResources'
+        availabilityZoneAPI:
+          $ref: '#/components/schemas/FederationAPIResources'
+        edgeApplicationAPI:
+          $ref: '#/components/schemas/FederationAPIResources'
+        artefactAPI:
+          $ref: '#/components/schemas/FederationAPIResources'
+        fileAPI:
+          $ref: '#/components/schemas/FederationAPIResources'
+        serviceAPIFederation:
+          $ref: '#/components/schemas/FederationAPIResources'
+        resourceMonitoringAPI:
+          $ref: '#/components/schemas/FederationAPIResources'
+        faultManagementAPI:
+          $ref: '#/components/schemas/FederationAPIResources'
+        eventManagementAPI:
+          $ref: '#/components/schemas/FederationAPIResources'
+      example:
+        availabilityZoneAPI: null
+        artefactAPI: null
+        fileAPI: null
+        resourceMonitoringAPI: null
+        faultManagementAPI: null
+        federationBaseAPI:
+          name: FEDERATION
+          apiOperations:
+          - httpMethods:
+            - POST
+            - POST
+            href: href
+          - httpMethods:
+            - POST
+            - POST
+            href: href
+        serviceAPIFederation: null
+        eventManagementAPI: null
+        edgeApplicationAPI: null
+    FederationAPINames:
+      type: string
+      enum:
+      - FEDERATION
+      - AVAILZONE
+      - ARTEFACT
+      - FILE
+      - SVSAPEFED
+      - RESMONITOR
+      - EVENTMGMT
+      - FAULTMGMT
+    HttpMethods:
+      type: string
+      enum:
+      - POST
+      - PUT
+      - PATCH
+      - DELETE
+      - GET
+    HttpResources:
+      required:
+      - href
+      - httpMethods
+      type: object
+      properties:
+        href:
+          $ref: '#/components/schemas/Uri'
+        httpMethods:
+          type: array
+          description: List of HTTP Methods supported for the given API category
+          items:
+            $ref: '#/components/schemas/HttpMethods'
+      example:
+        httpMethods:
+        - POST
+        - POST
+        href: href
+    FederationAPIResources:
+      required:
+      - apiOperations
+      - name
+      type: object
+      properties:
+        name:
+          $ref: '#/components/schemas/FederationAPINames'
+        apiOperations:
+          type: array
+          description: List of HTTP Methods supported for the given API category
+          items:
+            $ref: '#/components/schemas/HttpResources'
+      example:
+        name: FEDERATION
+        apiOperations:
+        - httpMethods:
+          - POST
+          - POST
+          href: href
+        - httpMethods:
+          - POST
+          - POST
+          href: href
+    State:
+      required:
+      - alarmState
+      type: object
+      properties:
+        alarmState:
+          type: string
+          description: Defines the alarm state during its life cycle (raised | updated
+            | cleared).
+          enum:
+          - RAISED
+          - UPDATED
+          - CLEAR
+      example:
+        alarmState: RAISED
+    serviceType:
+      type: string
+      description: An identifier to refer to partner OP capabilities for application
+        providers.
+      enum:
+      - api_federation
+    serviceAPINames:
+      minItems: 1
+      type: array
+      description: "List of Service API capability names an OP supports and offers\
+        \ to other OPs \"quality_on_demand\", \"device_location\" etc."
+      items:
+        type: string
+        enum:
+        - QualityOnDemand
+        - DeviceLocation
+        - DeviceStatus
+        - SimSwap
+        - NumberVerification
+        - DeviceIdentifier
+    serviceAPINameVal:
+      type: string
+      enum:
+        - QualityOnDemand
+        - DeviceLocation
+        - DeviceStatus
+        - SimSwap
+        - NumberVerification
+        - DeviceIdentifier
+      description: Name of the Service API
+    serviceRoutingInfo:
+      minItems: 1
+      type: array
+      description: List of public IP addresses MNO manages for UEs to connect with
+        public data networks
+      items:
+        pattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\\
+          /([0-9]|[1-2][0-9]|3[0-2]))?$"
+        type: string
+    AppComponentSpecs:
+      minItems: 1
+      type: array
+      description: "An application may consist of more than one component. Each component\
+        \ is associated with a descriptor and may exposes its services externally\
+        \ or internally.  App providers are required to provide details about all\
+        \ these components, their associated descriptors and their DNS names."
+      items:
+        $ref: '#/components/schemas/AppComponentSpecs_inner'
+    AppMetaData:
+      required:
+      - accessToken
+      - appName
+      - version
+      type: object
+      properties:
+        appName:
+          pattern: "^[A-Za-z][A-Za-z0-9_]{7,31}$"
+          type: string
+          description: Name of the application. Application provider define a human
+            readable name for the application
+        version:
+          type: string
+          description: Version info of the application
+        appDescription:
+          maxLength: 256
+          minLength: 16
+          type: string
+          description: Brief application description provided by application provider
+        mobilitySupport:
+          type: boolean
+          description: Indicates if an application is sensitive to user mobility and
+            can be relocated. Default is “FALSE”
+          default: false
+        accessToken:
+          pattern: "^[A-Za-z][A-Za-z0-9_]{31,63}$"
+          type: string
+          description: "An application Access key, to be used with UNI interface to\
+            \ authorize UCs Access to a given application"
+        category:
+          type: string
+          description: Possible categorization of the application
+          enum:
+          - IOT
+          - HEALTH_CARE
+          - GAMING
+          - VIRTUAL_REALITY
+          - SOCIALIZING
+          - SURVEILLANCE
+          - ENTERTAINMENT
+          - CONNECTIVITY
+          - PRODUCTIVITY
+          - SECURITY
+          - INDUSTRIAL
+          - EDUCATION
+          - OTHERS
+      description: Application metadata details
+      example:
+        appName: appName
+        mobilitySupport: false
+        appDescription: appDescription
+        accessToken: accessToken
+        category: IOT
+        version: version
+    AppQoSProfile:
+      required:
+      - latencyConstraints
+      type: object
+      properties:
+        latencyConstraints:
+          type: string
+          description: "Latency requirements for the application. Allowed values (non-standardized)\
+            \ are none, low and ultra-low. Ultra-Low may corresponds to range 15 -\
+            \ 30 msec, Low correspond to range 30 - 50 msec. None means 51 and above"
+          enum:
+          - NONE
+          - LOW
+          - ULTRALOW
+        bandwidthRequired:
+          minimum: 1
+          type: integer
+          description: Data transfer bandwidth requirement (minimum limit) for the
+            application. It should in Mbits/sec
+          format: int32
+        multiUserClients:
+          type: string
+          description: Single user type application are designed to serve just one
+            client. Multi user type application is designed to serve multiple clients
+          default: APP_TYPE_SINGLE_USER
+          enum:
+          - APP_TYPE_SINGLE_USER
+          - APP_TYPE_MULTI_USER
+        noOfUsersPerAppInst:
+          type: integer
+          description: Maximum no of clients that can connect to an instance of this
+            application. This parameter is relevant only for application of type multi
+            user
+          default: 1
+        appProvisioning:
+          type: boolean
+          description: Define if application can be instantiated or not
+          default: true
+      description: "Parameters corresponding to the performance constraints, tenancy\
+        \ details etc."
+      example:
+        bandwidthRequired: 1
+        multiUserClients: APP_TYPE_SINGLE_USER
+        noOfUsersPerAppInst: 6
+        latencyConstraints: NONE
+        appProvisioning: true
+    CallbackCredentials:
+      required:
+      - clientId
+      - clientSecret
+      - tokenUrl
+      type: object
+      properties:
+        tokenUrl:
+          $ref: '#/components/schemas/Uri'
+        clientId:
+          type: string
+          description: Client id for oauth2 client credentials flow.
+        clientSecret:
+          type: string
+          description: Client secret for oauth2 client credentials flow.
+      description: "Authentication credentials for callbacks. Callbacks use the same\
+        \ security scheme, flows, and scopes as the forward path."
+    CompEnvParams:
+      required:
+      - envValueType
+      - envVarName
+      type: object
+      properties:
+        envVarName:
+          pattern: "^[A-Za-z0-9][A-Za-z0-9_]{6,30}[A-Za-z0-9]$"
+          type: string
+          description: Name of environment variable
+        envValueType:
+          type: string
+          enum:
+          - USER_DEFINED
+          - PLATFORM_DEFINED_DYNAMIC_PORT
+          - PLATFORM_DEFINED_DNS
+          - PLATFORM_DEFINED_IP
+        envVarValue:
+          pattern: "^[A-Za-z0-9][A-Za-z0-9_]{6,62}[A-Za-z0-9]$"
+          type: string
+          description: Value to be assigned to environment variable
+        envVarSrc:
+          type: string
+          description: "Full path of parameter from componentSpec that should be used\
+            \ to generate the environment value. Eg. networkResourceProfile[1]. interfaceId."
+      description: Environment variables are key value pairs that should be injected
+        when component in instantiated
+    CommandLineParams:
+      required:
+      - command
+      type: object
+      properties:
+        command:
+          type: array
+          description: List of commands that application should invoke when an instance
+            is created.
+          items:
+            type: string
+        commandArgs:
+          type: array
+          description: List of arguments required by the command.
+          items:
+            type: string
+      description: List of commands and arguments that shall be invoked when the component
+        instance is created. This is valid only for container based deployment.
+    DeploymentConfig:
+      required:
+      - configType
+      - contents
+      type: object
+      properties:
+        configType:
+          type: string
+          description: Config type.
+          enum:
+          - DOCKER_COMPOSE
+          - KUBERNETES_MANIFEST
+          - CLOUD_INIT
+          - HELM_VALUES
+        contents:
+          type: string
+          description: Contents of the configuration.
+      description: "Configuration used when deploying a component. May override other\
+        \ ComponentSpec parameters related to deployment like restart policy, command\
+        \ line parameters, environment variables, etc."
+    ComponentSpec:
+      required:
+      - componentName
+      - computeResourceProfile
+      - images
+      - numOfInstances
+      - restartPolicy
+      type: object
+      properties:
+        componentName:
+          pattern: "^[A-Za-z0-9][A-Za-z0-9_]{6,62}[A-Za-z0-9]$"
+          type: string
+          description: Must be a valid RFC 1035 label name.  Component name must be
+            unique with an application
+        images:
+          minItems: 1
+          type: array
+          description: List of all images associated with the component. Images are
+            specified using the file identifiers. Partner OP provides these images
+            using file upload api.
+          items:
+            $ref: '#/components/schemas/FileId'
+        numOfInstances:
+          type: integer
+          description: Number of component instances to be launched.
+          format: int32
+        restartPolicy:
+          type: string
+          description: How the platform shall handle component failure
+          enum:
+          - RESTART_POLICY_ALWAYS
+          - RESTART_POLICY_NEVER
+        commandLineParams:
+          $ref: '#/components/schemas/CommandLineParams'
+        exposedInterfaces:
+          minItems: 1
+          type: array
+          description: Each application component exposes some ports either for external
+            users or for inter component communication. Application provider is required
+            to specify which ports are to be exposed and the type of traffic that
+            will flow through these ports.
+          items:
+            $ref: '#/components/schemas/InterfaceDetails'
+        computeResourceProfile:
+          $ref: '#/components/schemas/ComputeResourceInfo'
+        compEnvParams:
+          type: array
+          items:
+            $ref: '#/components/schemas/CompEnvParams'
+        deploymentConfig:
+          $ref: '#/components/schemas/DeploymentConfig'
+        persistentVolumes:
+          minItems: 1
+          type: array
+          description: The ephemeral volume a container process may need to temporary
+            store internal data
+          items:
+            $ref: '#/components/schemas/PersistentVolumeDetails'
+      description: "Details about compute, networking and storage requirements for\
+        \ each component of the application. App provider should define all information\
+        \ needed to instantiate the component. If artefact is being defined at component\
+        \ level this section should have information just about the component. In\
+        \ case the artefact is being defined at application level the section should\
+        \ provide details about all the components."
+    ComputeResourceInfo:
+      required:
+      - cpuArchType
+      - memory
+      - numCPU
+      type: object
+      properties:
+        cpuArchType:
+          type: string
+          description: "CPU Instruction Set Architecture (ISA) E.g., Intel, Arm etc."
+          enum:
+          - ISA_X86_64
+          - ISA_ARM_64
+        numCPU:
+          $ref: '#/components/schemas/Vcpu'
+        memory:
+          type: integer
+          description: Amount of RAM in Mbytes
+          format: int64
+        diskStorage:
+          type: integer
+          description: Amount of disk storage in Gbytes for a given ISA type
+          format: int32
+        gpu:
+          type: array
+          items:
+            $ref: '#/components/schemas/GpuInfo'
+        vpu:
+          type: integer
+          description: Number of Intel VPUs available for a given ISA type
+        fpga:
+          type: integer
+          description: Number of FPGAs available for a given ISA type
+        hugepages:
+          type: array
+          items:
+            $ref: '#/components/schemas/HugePage'
+        cpuExclusivity:
+          type: boolean
+          description: Support for exclusive CPUs
+      example:
+        hugepages:
+        - number: 7
+          pageSize: 2MB
+        - number: 7
+          pageSize: 2MB
+        memory: 0
+        fpga: 2
+        cpuArchType: ISA_X86_64
+        diskStorage: 6
+        numCPU: "{\"whole\":{\"value\":2},\"decimal\":{\"value\":0.5},\"millivcpu\"\
+          :{\"value\":\"500m\"}}"
+        vpu: 5
+        cpuExclusivity: true
+        gpu:
+        - gpuMemory: 1
+          gpuVendorType: Nvidia
+          gpuModeName: gpuModeName
+          numGPU: 5
+        - gpuMemory: 1
+          gpuVendorType: Nvidia
+          gpuModeName: gpuModeName
+          numGPU: 5
+    FederationRequestData:
+      required:
+      - initialDate
+      - origOPFederationId
+      - partnerStatusLink
+      type: object
+      properties:
+        origOPFederationId:
+          $ref: '#/components/schemas/FederationIdentifier'
+        origOPCountryCode:
+          $ref: '#/components/schemas/CountryCode'
+        origOPMobileNetworkCodes:
+          $ref: '#/components/schemas/MobileNetworkIds'
+        origOPFixedNetworkCodes:
+          $ref: '#/components/schemas/FixedNetworkIds'
+        initialDate:
+          type: string
+          description: Time zone info of the federation initiated by the originating
+            OP
+          format: date-time
+        partnerStatusLink:
+          $ref: '#/components/schemas/Uri'
+        partnerCallbackCredentials:
+          $ref: '#/components/schemas/CallbackCredentials'
+    FederationResponseData:
+      required:
+      - federationContextId
+      - partnerOPFederationId
+      - platformCaps
+      type: object
+      properties:
+        partnerOPFederationId:
+          $ref: '#/components/schemas/FederationIdentifier'
+        partnerOPCountryCode:
+          $ref: '#/components/schemas/CountryCode'
+        federationContextId:
+          $ref: '#/components/schemas/FederationContextId'
+        edgeDiscoveryServiceEndPoint:
+          $ref: '#/components/schemas/ServiceEndpoint'
+        lcmServiceEndPoint:
+          $ref: '#/components/schemas/ServiceEndpoint'
+        partnerOPMobileNetworkCodes:
+          $ref: '#/components/schemas/MobileNetworkIds'
+        partnerOPFixedNetworkCodes:
+          $ref: '#/components/schemas/FixedNetworkIds'
+        offeredAvailabilityZones:
+          minItems: 1
+          type: array
+          description: "List of zones, which the operator platform wishes to make\
+            \ available to developers/ISVs of requesting operator platform."
+          items:
+            $ref: '#/components/schemas/ZoneDetails'
+        platformCaps:
+          type: array
+          items:
+            type: string
+            description: "Home routing - Operator platform is capable of routing edge\
+              \ application data traffic from its edges to user device in their home\
+              \ location. This is the case where user devices are served in their\
+              \ home region (requesting platform region, non-roaming) but the corresponding\
+              \ edge application are in operator platform edges. Anchoring - Operator\
+              \ platform is capable of routing edge application traffic for roaming\
+              \ user devices to edge application in user device home network. Service\
+              \ APIs - Capability to handle Service APIs (e.g., CAMARA APIs) from\
+              \ the Leading OP"
+            enum:
+            - homeRouting
+            - Anchoring
+            - serviceAPIs
+            - faultMgmt
+            - eventMgmt
+            - resourceMonitor
+      example:
+        offeredAvailabilityZones:
+        - geographyDetails: geographyDetails
+          zoneId: zoneId
+          geolocation: geolocation
+        - geographyDetails: geographyDetails
+          zoneId: zoneId
+          geolocation: geolocation
+        platformCaps:
+        - homeRouting
+        - homeRouting
+        partnerOPCountryCode: partnerOPCountryCode
+        federationContextId: federationContextId
+        lcmServiceEndPoint: null
+        partnerOPFederationId: partnerOPFederationId
+        edgeDiscoveryServiceEndPoint:
+          ipv4Addresses:
+          - 198.51.100.1
+          - 198.51.100.1
+          port: 0
+          fqdn: fqdn
+          ipv6Addresses:
+          - 2001:db8:85a3::8a2e:370:7334
+          - 2001:db8:85a3::8a2e:370:7334
+        partnerOPMobileNetworkCodes:
+          mncs:
+          - mncs
+          - mncs
+          mcc: mcc
+        partnerOPFixedNetworkCodes:
+        - partnerOPFixedNetworkCodes
+        - partnerOPFixedNetworkCodes
+    Flavour:
+      required:
+      - cpuArchType
+      - flavourId
+      - memorySize
+      - numCPU
+      - storageSize
+      - supportedOSTypes
+      type: object
+      properties:
+        flavourId:
+          $ref: '#/components/schemas/FlavourId'
+        cpuArchType:
+          $ref: '#/components/schemas/CPUArchType'
+        supportedOSTypes:
+          minItems: 1
+          type: array
+          description: "A list of operating systems which this flavour configuration\
+            \ can support e.g., RHEL Linux, Ubuntu 18.04 LTS, MS Windows 2012 R2."
+          items:
+            $ref: '#/components/schemas/OSType'
+        numCPU:
+          type: integer
+          description: Number of available vCPUs
+          format: int32
+        memorySize:
+          type: integer
+          description: Amount of RAM in Mbytes
+          format: int32
+        storageSize:
+          type: integer
+          description: Amount of disk storage in Gbytes
+          format: int32
+        gpu:
+          type: array
+          items:
+            $ref: '#/components/schemas/GpuInfo'
+        fpga:
+          type: integer
+          description: Number of FPGAs
+          format: int32
+        vpu:
+          type: integer
+          description: Number of Intel VPUs available
+        hugepages:
+          type: array
+          items:
+            $ref: '#/components/schemas/HugePage'
+        cpuExclusivity:
+          type: boolean
+          description: Support for exclusive CPUs
+      example:
+        hugepages:
+        - null
+        - null
+        flavourId: flavourId
+        memorySize: 3
+        fpga: 4
+        cpuArchType: ISA_X86
+        storageSize: 2
+        numCPU: 9
+        vpu: 7
+        cpuExclusivity: true
+        supportedOSTypes:
+        - license: OS_LICENSE_TYPE_FREE
+          distribution: RHEL
+          version: OS_VERSION_UBUNTU_2204_LTS
+          architecture: x86_64
+        - license: OS_LICENSE_TYPE_FREE
+          distribution: RHEL
+          version: OS_VERSION_UBUNTU_2204_LTS
+          architecture: x86_64
+        gpu:
+        - null
+        - null
+    GpuInfo:
+      required:
+      - gpuMemory
+      - gpuModeName
+      - gpuVendorType
+      - numGPU
+      type: object
+      properties:
+        gpuVendorType:
+          type: string
+          description: "GPU vendor name e.g. NVIDIA, AMD etc."
+          example: Nvidia
+          enum:
+          - GPU_PROVIDER_NVIDIA
+          - GPU_PROVIDER_AMD
+        gpuModeName:
+          type: string
+          description: "Model name corresponding to vendorType may include info e.g.\
+            \ for NVIDIA, model name could be “Tesla M60”, “Tesla V100” etc."
+        gpuMemory:
+          type: integer
+          description: GPU memory in Mbytes
+        numGPU:
+          type: integer
+          description: Number of GPUs
+      example:
+        gpuMemory: 1
+        gpuVendorType: Nvidia
+        gpuModeName: gpuModeName
+        numGPU: 5
+    HugePage:
+      required:
+      - number
+      - pageSize
+      type: object
+      properties:
+        pageSize:
+          type: string
+          description: Size of hugepage
+          enum:
+          - 2MB
+          - 4MB
+          - 1GB
+        number:
+          type: integer
+          description: Total number of huge pages
+      example:
+        number: 7
+        pageSize: 2MB
+    InterfaceDetails:
+      required:
+      - commPort
+      - commProtocol
+      - interfaceId
+      - visibilityType
+      type: object
+      properties:
+        interfaceId:
+          pattern: "^[A-Za-z0-9][A-Za-z0-9_]{6,30}[A-Za-z0-9]$"
+          type: string
+          description: Each Port and corresponding traffic protocol exposed by the
+            component is identified by a name. Application client on user device requires
+            this to uniquely identify the interface.
+        commProtocol:
+          type: string
+          description: "Defines the IP transport communication protocol i.e., TCP,\
+            \ UDP or HTTP"
+          enum:
+          - TCP
+          - UDP
+          - HTTP_HTTPS
+        commPort:
+          maximum: 65535
+          minimum: 1
+          type: integer
+          description: Port number exposed by the component. OP may generate a dynamic
+            port towards the UCs corresponding to this internal port and forward the
+            client traffic from dynamic port to container Port.
+          format: int32
+        visibilityType:
+          type: string
+          description: "Defines whether the interface is exposed to outer world or\
+            \ not i.e., external, or internal. If this is set to \"external\", then\
+            \ it is exposed to external applications otherwise it is exposed internally\
+            \ to edge application components within edge cloud. When exposed to external\
+            \ world, an external dynamic port is assigned for UC traffic and mapped\
+            \ to the internal container Port"
+          enum:
+          - VISIBILITY_EXTERNAL
+          - VISIBILITY_INTERNAL
+        network:
+          pattern: "^[A-Za-z][A-Za-z0-9_]{6,30}[A-Za-z0-9]$"
+          type: string
+          description: Name of the network.  In case the application has to be associated
+            with more than 1 network then app provider must define the name of the
+            network on which this interface has to be exposed.  This parameter is
+            required only if the port has to be exposed on a specific network other
+            than default.
+        InterfaceName:
+          pattern: "^[a-z][a-z0-9]{3}$"
+          type: string
+          description: Interface Name. Required only if application has to be attached
+            to a network other than default.
+    InvalidParam:
+      required:
+      - param
+      type: object
+      properties:
+        param:
+          type: string
+        reason:
+          type: string
+    MobileNetworkIds:
+      type: object
+      properties:
+        mcc:
+          $ref: '#/components/schemas/Mcc'
+        mncs:
+          minItems: 1
+          type: array
+          items:
+            $ref: '#/components/schemas/Mnc'
+      example:
+        mncs:
+        - mncs
+        - mncs
+        mcc: mcc
+    ObjectRepoLocation:
+      type: object
+      properties:
+        repoURL:
+          $ref: '#/components/schemas/Uri'
+        userName:
+          type: string
+          description: Username to access the repository
+        password:
+          type: string
+          description: Password to access the repository
+        token:
+          type: string
+          description: Authorization token to access the repository
+      example:
+        repoURL: repoURL
+        password: password
+        userName: userName
+        token: token
+    OSType:
+      required:
+      - architecture
+      - distribution
+      - license
+      - version
+      type: object
+      properties:
+        architecture:
+          type: string
+          example: x86_64
+          enum:
+          - x86_64
+          - x86
+        distribution:
+          type: string
+          enum:
+          - RHEL
+          - UBUNTU
+          - COREOS
+          - FEDORA
+          - WINDOWS
+          - OTHER
+        version:
+          type: string
+          enum:
+          - OS_VERSION_UBUNTU_2204_LTS
+          - OS_VERSION_RHEL_8
+          - OS_VERSION_RHEL_7
+          - OS_VERSION_DEBIAN_11
+          - OS_VERSION_COREOS_STABLE
+          - OS_MS_WINDOWS_2012_R2
+          - OTHER
+        license:
+          type: string
+          enum:
+          - OS_LICENSE_TYPE_FREE
+          - OS_LICENSE_TYPE_ON_DEMAND
+          - NOT_SPECIFIED
+      example:
+        license: OS_LICENSE_TYPE_FREE
+        distribution: RHEL
+        version: OS_VERSION_UBUNTU_2204_LTS
+        architecture: x86_64
+    PersistentVolumeDetails:
+      required:
+      - volumeMountPath
+      - volumeName
+      - volumeSize
+      type: object
+      properties:
+        volumeSize:
+          type: string
+          description: "size of the volume given by user (10GB, 20GB, 50 GB or 100GB)"
+          enum:
+          - 10Gi
+          - 20Gi
+          - 50Gi
+          - 100Gi
+        volumeMountPath:
+          type: string
+          description: Defines the mount path of the volume
+        volumeName:
+          type: string
+          description: Human readable name for the volume
+        ephemeralType:
+          type: boolean
+          description: It indicates the ephemeral storage on the node and contents
+            are not preserved if containers restarts
+          default: false
+        accessMode:
+          type: string
+          description: Values are RW (read/write) and RO (read-only)l
+          default: RW
+          enum:
+          - RW
+          - RO
+        sharingPolicy:
+          type: string
+          description: "Exclusive or Shared. If shared, then in case of multiple containers\
+            \ same volume will be shared across the containers."
+          default: EXCLUSIVE
+          enum:
+          - EXCLUSIVE
+          - SHARED
+    ProblemDetails:
+      type: object
+      properties:
+        title:
+          type: string
+        detail:
+          type: string
+        cause:
+          type: string
+        invalidParams:
+          minItems: 1
+          type: array
+          items:
+            $ref: '#/components/schemas/InvalidParam'
+    ServiceEndpoint:
+      required:
+      - port
+      type: object
+      properties:
+        port:
+          $ref: '#/components/schemas/Port'
+        fqdn:
+          $ref: '#/components/schemas/Fqdn'
+        ipv4Addresses:
+          minItems: 1
+          type: array
+          items:
+            $ref: '#/components/schemas/Ipv4Addr'
+        ipv6Addresses:
+          minItems: 1
+          type: array
+          items:
+            $ref: '#/components/schemas/Ipv6Addr'
+      example:
+        ipv4Addresses:
+        - 198.51.100.1
+        - 198.51.100.1
+        port: 0
+        fqdn: fqdn
+        ipv6Addresses:
+        - 2001:db8:85a3::8a2e:370:7334
+        - 2001:db8:85a3::8a2e:370:7334
+      anyOf:
+      - required:
+        - fqdn
+      - required:
+        - ipv4Addresses
+      - required:
+        - ipv6Addresses
+    ZoneDetails:
+      required:
+      - geographyDetails
+      - geolocation
+      - zoneId
+      type: object
+      properties:
+        zoneId:
+          $ref: '#/components/schemas/ZoneIdentifier'
+        geolocation:
+          $ref: '#/components/schemas/GeoLocation'
+        geographyDetails:
+          type: string
+          description: "Details about cities or state covered by the edge. Details\
+            \ about the type of locality for eg rural, urban, industrial etc. This\
+            \ information is defined in human readable form."
+      example:
+        geographyDetails: geographyDetails
+        zoneId: zoneId
+        geolocation: geolocation
+    ZoneRegistrationRequestData:
+      required:
+      - acceptedAvailabilityZones
+      - availZoneNotifLink
+      type: object
+      properties:
+        acceptedAvailabilityZones:
+          minItems: 1
+          type: array
+          items:
+            $ref: '#/components/schemas/ZoneIdentifier'
+        availZoneNotifLink:
+          $ref: '#/components/schemas/Uri'
+    ZoneRegistrationResponseData:
+      required:
+      - acceptedZoneResourceInfo
+      type: object
+      properties:
+        acceptedZoneResourceInfo:
+          minItems: 1
+          type: array
+          items:
+            $ref: '#/components/schemas/ZoneRegisteredData'
+      example:
+        acceptedZoneResourceInfo:
+        - networkResources:
+            supportDPDK: true
+            supportSriov: true
+            egressBandWidth: 1
+            dedicatedNIC: 1
+          reservedComputeResources:
+          - hugepages:
+            - number: 7
+              pageSize: 2MB
+            - number: 7
+              pageSize: 2MB
+            memory: 0
+            fpga: 2
+            cpuArchType: ISA_X86_64
+            diskStorage: 6
+            numCPU: "{\"whole\":{\"value\":2},\"decimal\":{\"value\":0.5},\"millivcpu\"\
+              :{\"value\":\"500m\"}}"
+            vpu: 5
+            cpuExclusivity: true
+            gpu:
+            - gpuMemory: 1
+              gpuVendorType: Nvidia
+              gpuModeName: gpuModeName
+              numGPU: 5
+            - gpuMemory: 1
+              gpuVendorType: Nvidia
+              gpuModeName: gpuModeName
+              numGPU: 5
+          - hugepages:
+            - number: 7
+              pageSize: 2MB
+            - number: 7
+              pageSize: 2MB
+            memory: 0
+            fpga: 2
+            cpuArchType: ISA_X86_64
+            diskStorage: 6
+            numCPU: "{\"whole\":{\"value\":2},\"decimal\":{\"value\":0.5},\"millivcpu\"\
+              :{\"value\":\"500m\"}}"
+            vpu: 5
+            cpuExclusivity: true
+            gpu:
+            - gpuMemory: 1
+              gpuVendorType: Nvidia
+              gpuModeName: gpuModeName
+              numGPU: 5
+            - gpuMemory: 1
+              gpuVendorType: Nvidia
+              gpuModeName: gpuModeName
+              numGPU: 5
+          zoneId: zoneId
+          flavoursSupported:
+          - hugepages:
+            - null
+            - null
+            flavourId: flavourId
+            memorySize: 3
+            fpga: 4
+            cpuArchType: ISA_X86
+            storageSize: 2
+            numCPU: 9
+            vpu: 7
+            cpuExclusivity: true
+            supportedOSTypes:
+            - license: OS_LICENSE_TYPE_FREE
+              distribution: RHEL
+              version: OS_VERSION_UBUNTU_2204_LTS
+              architecture: x86_64
+            - license: OS_LICENSE_TYPE_FREE
+              distribution: RHEL
+              version: OS_VERSION_UBUNTU_2204_LTS
+              architecture: x86_64
+            gpu:
+            - null
+            - null
+          - hugepages:
+            - null
+            - null
+            flavourId: flavourId
+            memorySize: 3
+            fpga: 4
+            cpuArchType: ISA_X86
+            storageSize: 2
+            numCPU: 9
+            vpu: 7
+            cpuExclusivity: true
+            supportedOSTypes:
+            - license: OS_LICENSE_TYPE_FREE
+              distribution: RHEL
+              version: OS_VERSION_UBUNTU_2204_LTS
+              architecture: x86_64
+            - license: OS_LICENSE_TYPE_FREE
+              distribution: RHEL
+              version: OS_VERSION_UBUNTU_2204_LTS
+              architecture: x86_64
+            gpu:
+            - null
+            - null
+          computeResourceQuotaLimits:
+          - null
+          - null
+          zoneServiceLevelObjsInfo:
+            latencyRanges:
+              minLatency: 1
+              maxLatency: 6
+            jitterRanges:
+              maxJitter: 1
+              minJitter: 1
+            throughputRanges:
+              minThroughput: 1
+              maxThroughput: 5
+        - networkResources:
+            supportDPDK: true
+            supportSriov: true
+            egressBandWidth: 1
+            dedicatedNIC: 1
+          reservedComputeResources:
+          - hugepages:
+            - number: 7
+              pageSize: 2MB
+            - number: 7
+              pageSize: 2MB
+            memory: 0
+            fpga: 2
+            cpuArchType: ISA_X86_64
+            diskStorage: 6
+            numCPU: "{\"whole\":{\"value\":2},\"decimal\":{\"value\":0.5},\"millivcpu\"\
+              :{\"value\":\"500m\"}}"
+            vpu: 5
+            cpuExclusivity: true
+            gpu:
+            - gpuMemory: 1
+              gpuVendorType: Nvidia
+              gpuModeName: gpuModeName
+              numGPU: 5
+            - gpuMemory: 1
+              gpuVendorType: Nvidia
+              gpuModeName: gpuModeName
+              numGPU: 5
+          - hugepages:
+            - number: 7
+              pageSize: 2MB
+            - number: 7
+              pageSize: 2MB
+            memory: 0
+            fpga: 2
+            cpuArchType: ISA_X86_64
+            diskStorage: 6
+            numCPU: "{\"whole\":{\"value\":2},\"decimal\":{\"value\":0.5},\"millivcpu\"\
+              :{\"value\":\"500m\"}}"
+            vpu: 5
+            cpuExclusivity: true
+            gpu:
+            - gpuMemory: 1
+              gpuVendorType: Nvidia
+              gpuModeName: gpuModeName
+              numGPU: 5
+            - gpuMemory: 1
+              gpuVendorType: Nvidia
+              gpuModeName: gpuModeName
+              numGPU: 5
+          zoneId: zoneId
+          flavoursSupported:
+          - hugepages:
+            - null
+            - null
+            flavourId: flavourId
+            memorySize: 3
+            fpga: 4
+            cpuArchType: ISA_X86
+            storageSize: 2
+            numCPU: 9
+            vpu: 7
+            cpuExclusivity: true
+            supportedOSTypes:
+            - license: OS_LICENSE_TYPE_FREE
+              distribution: RHEL
+              version: OS_VERSION_UBUNTU_2204_LTS
+              architecture: x86_64
+            - license: OS_LICENSE_TYPE_FREE
+              distribution: RHEL
+              version: OS_VERSION_UBUNTU_2204_LTS
+              architecture: x86_64
+            gpu:
+            - null
+            - null
+          - hugepages:
+            - null
+            - null
+            flavourId: flavourId
+            memorySize: 3
+            fpga: 4
+            cpuArchType: ISA_X86
+            storageSize: 2
+            numCPU: 9
+            vpu: 7
+            cpuExclusivity: true
+            supportedOSTypes:
+            - license: OS_LICENSE_TYPE_FREE
+              distribution: RHEL
+              version: OS_VERSION_UBUNTU_2204_LTS
+              architecture: x86_64
+            - license: OS_LICENSE_TYPE_FREE
+              distribution: RHEL
+              version: OS_VERSION_UBUNTU_2204_LTS
+              architecture: x86_64
+            gpu:
+            - null
+            - null
+          computeResourceQuotaLimits:
+          - null
+          - null
+          zoneServiceLevelObjsInfo:
+            latencyRanges:
+              minLatency: 1
+              maxLatency: 6
+            jitterRanges:
+              maxJitter: 1
+              minJitter: 1
+            throughputRanges:
+              minThroughput: 1
+              maxThroughput: 5
+    ZoneRegisteredData:
+      required:
+      - computeResourceQuotaLimits
+      - flavoursSupported
+      - reservedComputeResources
+      - zoneId
+      type: object
+      properties:
+        zoneId:
+          $ref: '#/components/schemas/ZoneIdentifier'
+        reservedComputeResources:
+          minItems: 1
+          type: array
+          description: Resources exclusively reserved for the originator OP.
+          items:
+            $ref: '#/components/schemas/ComputeResourceInfo'
+        computeResourceQuotaLimits:
+          minItems: 1
+          type: array
+          description: Max quota on resources partner OP allows over reserved resources.
+          items:
+            $ref: '#/components/schemas/ComputeResourceInfo'
+        flavoursSupported:
+          minItems: 1
+          type: array
+          items:
+            $ref: '#/components/schemas/Flavour'
+        networkResources:
+          $ref: '#/components/schemas/ZoneRegisteredData_networkResources'
+        zoneServiceLevelObjsInfo:
+          $ref: '#/components/schemas/ZoneRegisteredData_zoneServiceLevelObjsInfo'
+      example:
+        networkResources:
+          supportDPDK: true
+          supportSriov: true
+          egressBandWidth: 1
+          dedicatedNIC: 1
+        reservedComputeResources:
+        - hugepages:
+          - number: 7
+            pageSize: 2MB
+          - number: 7
+            pageSize: 2MB
+          memory: 0
+          fpga: 2
+          cpuArchType: ISA_X86_64
+          diskStorage: 6
+          numCPU: "{\"whole\":{\"value\":2},\"decimal\":{\"value\":0.5},\"millivcpu\"\
+            :{\"value\":\"500m\"}}"
+          vpu: 5
+          cpuExclusivity: true
+          gpu:
+          - gpuMemory: 1
+            gpuVendorType: Nvidia
+            gpuModeName: gpuModeName
+            numGPU: 5
+          - gpuMemory: 1
+            gpuVendorType: Nvidia
+            gpuModeName: gpuModeName
+            numGPU: 5
+        - hugepages:
+          - number: 7
+            pageSize: 2MB
+          - number: 7
+            pageSize: 2MB
+          memory: 0
+          fpga: 2
+          cpuArchType: ISA_X86_64
+          diskStorage: 6
+          numCPU: "{\"whole\":{\"value\":2},\"decimal\":{\"value\":0.5},\"millivcpu\"\
+            :{\"value\":\"500m\"}}"
+          vpu: 5
+          cpuExclusivity: true
+          gpu:
+          - gpuMemory: 1
+            gpuVendorType: Nvidia
+            gpuModeName: gpuModeName
+            numGPU: 5
+          - gpuMemory: 1
+            gpuVendorType: Nvidia
+            gpuModeName: gpuModeName
+            numGPU: 5
+        zoneId: zoneId
+        flavoursSupported:
+        - hugepages:
+          - null
+          - null
+          flavourId: flavourId
+          memorySize: 3
+          fpga: 4
+          cpuArchType: ISA_X86
+          storageSize: 2
+          numCPU: 9
+          vpu: 7
+          cpuExclusivity: true
+          supportedOSTypes:
+          - license: OS_LICENSE_TYPE_FREE
+            distribution: RHEL
+            version: OS_VERSION_UBUNTU_2204_LTS
+            architecture: x86_64
+          - license: OS_LICENSE_TYPE_FREE
+            distribution: RHEL
+            version: OS_VERSION_UBUNTU_2204_LTS
+            architecture: x86_64
+          gpu:
+          - null
+          - null
+        - hugepages:
+          - null
+          - null
+          flavourId: flavourId
+          memorySize: 3
+          fpga: 4
+          cpuArchType: ISA_X86
+          storageSize: 2
+          numCPU: 9
+          vpu: 7
+          cpuExclusivity: true
+          supportedOSTypes:
+          - license: OS_LICENSE_TYPE_FREE
+            distribution: RHEL
+            version: OS_VERSION_UBUNTU_2204_LTS
+            architecture: x86_64
+          - license: OS_LICENSE_TYPE_FREE
+            distribution: RHEL
+            version: OS_VERSION_UBUNTU_2204_LTS
+            architecture: x86_64
+          gpu:
+          - null
+          - null
+        computeResourceQuotaLimits:
+        - null
+        - null
+        zoneServiceLevelObjsInfo:
+          latencyRanges:
+            minLatency: 1
+            maxLatency: 6
+          jitterRanges:
+            maxJitter: 1
+            minJitter: 1
+          throughputRanges:
+            minThroughput: 1
+            maxThroughput: 5
+    inline_response_200:
+      required:
+      - federationSupportedAPIs
+      type: object
+      properties:
+        federationSupportedAPIs:
+          $ref: '#/components/schemas/FederationSupportedAPIs'
+      example:
+        federationSupportedAPIs:
+          availabilityZoneAPI: null
+          artefactAPI: null
+          fileAPI: null
+          resourceMonitoringAPI: null
+          faultManagementAPI: null
+          federationBaseAPI:
+            name: FEDERATION
+            apiOperations:
+            - httpMethods:
+              - POST
+              - POST
+              href: href
+            - httpMethods:
+              - POST
+              - POST
+              href: href
+          serviceAPIFederation: null
+          eventManagementAPI: null
+          edgeApplicationAPI: null
+    inline_response_200_1:
+      required:
+      - edgeDiscoveryServiceEndPoint
+      - lcmServiceEndPoint
+      type: object
+      properties:
+        edgeDiscoveryServiceEndPoint:
+          $ref: '#/components/schemas/ServiceEndpoint'
+        lcmServiceEndPoint:
+          $ref: '#/components/schemas/ServiceEndpoint'
+        allowedMobileNetworkIds:
+          $ref: '#/components/schemas/MobileNetworkIds'
+        allowedFixedNetworkIds:
+          $ref: '#/components/schemas/FixedNetworkIds'
+        offeredAvailabilityZones:
+          minItems: 1
+          type: array
+          items:
+            $ref: '#/components/schemas/ZoneDetails'
+      example:
+        allowedFixedNetworkIds:
+        - allowedFixedNetworkIds
+        - allowedFixedNetworkIds
+        offeredAvailabilityZones:
+        - geographyDetails: geographyDetails
+          zoneId: zoneId
+          geolocation: geolocation
+        - geographyDetails: geographyDetails
+          zoneId: zoneId
+          geolocation: geolocation
+        lcmServiceEndPoint: null
+        allowedMobileNetworkIds:
+          mncs:
+          - mncs
+          - mncs
+          mcc: mcc
+        edgeDiscoveryServiceEndPoint:
+          ipv4Addresses:
+          - 198.51.100.1
+          - 198.51.100.1
+          port: 0
+          fqdn: fqdn
+          ipv6Addresses:
+          - 2001:db8:85a3::8a2e:370:7334
+          - 2001:db8:85a3::8a2e:370:7334
+    federationContextId_partner_body:
+      required:
+      - modificationDate
+      - objectType
+      - operationType
+      type: object
+      properties:
+        objectType:
+          type: string
+          enum:
+          - MOBILE_NETWORK_CODES
+          - FIXED_NETWORK_CODES
+        operationType:
+          type: string
+          enum:
+          - ADD_CODES
+          - REMOVE_CODES
+          - UPDATE_CODES
+        addMobileNetworkIds:
+          $ref: '#/components/schemas/MobileNetworkIds'
+        removeMobileNetworkIds:
+          $ref: '#/components/schemas/MobileNetworkIds'
+        addFixedNetworkIds:
+          $ref: '#/components/schemas/FixedNetworkIds'
+        removeFixedNetworkIds:
+          $ref: '#/components/schemas/FixedNetworkIds'
+        modificationDate:
+          type: string
+          description: Date and time of the federation modification by the originating
+            partner OP
+          format: date-time
+    inline_response_200_2:
+      required:
+      - FederationContextId
+      type: object
+      properties:
+        FederationContextId:
+          $ref: '#/components/schemas/FederationContextId'
+      example:
+        FederationContextId: FederationContextId
+    inline_response_200_3:
+      required:
+      - federationHealthStatus
+      type: object
+      properties:
+        federationHealthStatus:
+          $ref: '#/components/schemas/FederationHealthInfo'
+      example:
+        federationHealthStatus:
+          numOfApplications: numOfApplications
+          federationStatus:
+            alarmState: RAISED
+          numOfActiveAlarms: numOfActiveAlarms
+          numOfAcceptedZones: numOfAcceptedZones
+    inline_response_200_4:
+      required:
+      - ServiceType
+      - apiRoutingInfo
+      - serviceCaps
+      type: object
+      properties:
+        serviceCaps:
+          $ref: '#/components/schemas/serviceAPINames'
+        serviceType:
+          $ref: '#/components/schemas/serviceType'
+        apiRoutingInfo:
+          $ref: '#/components/schemas/serviceRoutingInfo'
+      example:
+        serviceType: api_federation
+        serviceCaps:
+        - QualityOnDemand
+        - QualityOnDemand
+        apiRoutingInfo:
+        - apiRoutingInfo
+        - apiRoutingInfo
+    federationContextId_artefact_body:
+      required:
+      - appProviderId
+      - artefactDescriptorType
+      - artefactId
+      - artefactName
+      - artefactVersionInfo
+      - artefactVirtType
+      - componentSpec
+      type: object
+      properties:
+        artefactId:
+          $ref: '#/components/schemas/ArtefactId'
+        appProviderId:
+          $ref: '#/components/schemas/AppProviderId'
+        artefactName:
+          pattern: "^[A-Za-z][A-Za-z0-9_]{7,31}$"
+          type: string
+          description: Name of the artefact.
+        artefactVersionInfo:
+          type: string
+          description: Artefact version information
+        artefactDescription:
+          maxLength: 256
+          type: string
+          description: Brief description of the artefact by the application provider
+        artefactVirtType:
+          type: string
+          enum:
+          - VM_TYPE
+          - CONTAINER_TYPE
+        artefactFileName:
+          maxLength: 32
+          minLength: 8
+          type: string
+          description: Name of the file.
+        artefactFileFormat:
+          type: string
+          description: Artefacts like Helm charts or Terraform scripts may need compressed
+            format.
+          enum:
+          - WINZIP
+          - TAR
+          - TEXT
+          - TARGZ
+        artefactDescriptorType:
+          type: string
+          description: Type of descriptor present in the artefact.  App provider can
+            either define either a Helm chart or a Terraform script or container spec.
+          enum:
+          - HELM
+          - TERRAFORM
+          - ANSIBLE
+          - SHELL
+          - COMPONENTSPEC
+        repoType:
+          type: string
+          description: "Artefact or file repository location. PUBLICREPO is used of\
+            \ public URLs like GitHub, Helm repo, docker registry etc., PRIVATEREPO\
+            \ is used for private repo managed by the application developer, UPLOAD\
+            \ is for the case when artefact/file is uploaded from MEC web portal.\
+            \ OP should pull the image from ‘repoUrl' immediately after receiving\
+            \ the request and then send back the response. In case the repoURL corresponds\
+            \ to a docker registry, use docker v2 http api to do the pull."
+          enum:
+          - PRIVATEREPO
+          - PUBLICREPO
+          - UPLOAD
+        artefactRepoLocation:
+          $ref: '#/components/schemas/ObjectRepoLocation'
+        artefactFile:
+          type: string
+          description: Helm archive/Terraform archive/container spec file or Binary
+            image associated with an application component.
+          format: binary
+        componentSpec:
+          minItems: 1
+          type: array
+          description: "Details about compute, networking and storage requirements\
+            \ for each component of the application. App provider should define all\
+            \ information needed to instantiate the component. If artefact is being\
+            \ defined at component level this section should have information just\
+            \ about the component. In case the artefact is being defined at application\
+            \ level the section should provide details about all the components."
+          items:
+            $ref: '#/components/schemas/ComponentSpec'
+    inline_response_200_5:
+      required:
+      - appProviderId
+      - artefactDescriptorType
+      - artefactId
+      - artefactName
+      - artefactVersionInfo
+      - artefactVirtType
+      type: object
+      properties:
+        artefactId:
+          $ref: '#/components/schemas/ArtefactId'
+        appProviderId:
+          $ref: '#/components/schemas/AppProviderId'
+        artefactName:
+          pattern: "^[A-Za-z][A-Za-z0-9_]{7,31}$"
+          type: string
+          description: Name of the artefact.
+        artefactDescription:
+          maxLength: 256
+          type: string
+          description: Brief description of the artefact by the application provider
+        artefactVersionInfo:
+          type: string
+          description: Artefact version information
+        artefactVirtType:
+          type: string
+          enum:
+          - VM_TYPE
+          - CONTAINER_TYPE
+        artefactFileName:
+          maxLength: 32
+          minLength: 8
+          type: string
+          description: Name of the file.
+        artefactFileFormat:
+          type: string
+          description: Artefacts like Helm charts or Terraform scripts may need compressed
+            format.
+          enum:
+          - WINZIP
+          - TAR
+          - TEXT
+          - TARGZ
+        artefactDescriptorType:
+          type: string
+          description: Type of descriptor present in the artefact.  App provider can
+            either define either a Helm chart or a Terraform script or container spec.
+          enum:
+          - HELM
+          - TERRAFORM
+          - ANSIBLE
+          - SHELL
+          - COMPONENTSPEC
+        repoType:
+          type: string
+          description: "Artefact or file repository location. PUBLICREPO is used of\
+            \ public URLs like GitHub, Helm repo, docker registry etc., PRIVATEREPO\
+            \ is used for private repo managed by the application developer, UPLOAD\
+            \ is for the case when artefact/file is uploaded from MEC web portal.\
+            \  OP should pull the image from ‘repoUrl' immediately after receiving\
+            \ the request and then send back the response. In case the repoURL corresponds\
+            \ to a docker registry, use docker v2 http api to do the pull."
+          enum:
+          - PRIVATEREPO
+          - PUBLICREPO
+          - UPLOAD
+        artefactRepoLocation:
+          $ref: '#/components/schemas/ObjectRepoLocation'
+      example:
+        artefactName: artefactName
+        artefactDescriptorType: HELM
+        artefactFileName: artefactFileName
+        repoType: PRIVATEREPO
+        artefactDescription: artefactDescription
+        appProviderId: appProviderId
+        artefactId: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        artefactVirtType: VM_TYPE
+        artefactVersionInfo: artefactVersionInfo
+        artefactRepoLocation:
+          repoURL: repoURL
+          password: password
+          userName: userName
+          token: token
+        artefactFileFormat: WINZIP
+    federationContextId_files_body:
+      required:
+      - appProviderId
+      - fileId
+      - fileName
+      - fileType
+      - fileVersionInfo
+      - imgInsSetArch
+      - imgOSType
+      type: object
+      properties:
+        fileId:
+          $ref: '#/components/schemas/FileId'
+        appProviderId:
+          $ref: '#/components/schemas/AppProviderId'
+        fileName:
+          pattern: "^[A-Za-z][A-Za-z0-9_]{7,31}$"
+          type: string
+          description: Name of the image file.   App provides specifies this name
+            when image is uploaded on originating OP over NBI.
+        fileDescription:
+          maxLength: 128
+          minLength: 8
+          type: string
+          description: Brief description about the image file.
+        fileVersionInfo:
+          type: string
+          description: File version information
+        fileType:
+          $ref: '#/components/schemas/VirtImageType'
+        checksum:
+          type: string
+          description: "MD5 checksum for VM and file-based images, sha256 digest for\
+            \ containers"
+        imgOSType:
+          $ref: '#/components/schemas/OSType'
+        imgInsSetArch:
+          $ref: '#/components/schemas/CPUArchType'
+        repoType:
+          type: string
+          description: "Artefact or file repository location. PUBLICREPO is used of\
+            \ public URLs like GitHub, Helm repo, docker registry etc., PRIVATEREPO\
+            \ is used for private repo managed by the application developer, UPLOAD\
+            \ is for the case when artefact/file is uploaded from MEC web portal.\
+            \  OP should pull the image from ‘repoUrl' immediately after receiving\
+            \ the request and then send back the response. In case the repoURL corresponds\
+            \ to a docker registry, use docker v2 http api to do the pull."
+          enum:
+          - PRIVATEREPO
+          - PUBLICREPO
+          - UPLOAD
+        fileRepoLocation:
+          $ref: '#/components/schemas/ObjectRepoLocation'
+        file:
+          type: string
+          description: Binary image associated with an application component.
+          format: binary
+    inline_response_200_6:
+      required:
+      - appProviderId
+      - fileId
+      - fileName
+      - fileType
+      - fileVersionInfo
+      - imgInsSetArch
+      - imgOSType
+      type: object
+      properties:
+        fileId:
+          $ref: '#/components/schemas/FileId'
+        appProviderId:
+          $ref: '#/components/schemas/AppProviderId'
+        fileName:
+          pattern: "^[A-Za-z][A-Za-z0-9_]{7,31}$"
+          type: string
+          description: Name of the image file.   App provides specifies this name
+            when image is uploaded on originating OP over NBI.
+        fileDescription:
+          maxLength: 128
+          minLength: 8
+          type: string
+          description: Brief description about the image file.
+        fileVersionInfo:
+          type: string
+          description: File version information
+        fileType:
+          $ref: '#/components/schemas/VirtImageType'
+        checksum:
+          type: string
+          description: "MD5 checksum for VM and file-based images, sha256 digest for\
+            \ containers"
+        imgOSType:
+          $ref: '#/components/schemas/OSType'
+        imgInsSetArch:
+          $ref: '#/components/schemas/CPUArchType'
+        repoType:
+          type: string
+          description: "Artefact or file repository location. PUBLICREPO is used of\
+            \ public URLs like GitHub, Helm repo, docker registry etc., PRIVATEREPO\
+            \ is used for private repo managed by the application developer, UPLOAD\
+            \ is for the case when artefact/file is uploaded from MEC web portal.\
+            \  OP should pull the image from ‘repoUrl' immediately after receiving\
+            \ the request and then send back the response. In case the repoURL corresponds\
+            \ to a docker registry, use docker v2 http api to do the pull."
+          enum:
+          - PRIVATEREPO
+          - PUBLICREPO
+          - UPLOAD
+        fileRepoLocation:
+          $ref: '#/components/schemas/ObjectRepoLocation'
+      example:
+        fileDescription: fileDescription
+        fileName: fileName
+        fileVersionInfo: fileVersionInfo
+        repoType: PRIVATEREPO
+        appProviderId: appProviderId
+        checksum: checksum
+        imgInsSetArch: ISA_X86
+        imgOSType:
+          license: OS_LICENSE_TYPE_FREE
+          distribution: RHEL
+          version: OS_VERSION_UBUNTU_2204_LTS
+          architecture: x86_64
+        fileRepoLocation:
+          repoURL: repoURL
+          password: password
+          userName: userName
+          token: token
+        fileType: QCOW2
+        fileId: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+    application_onboarding_body:
+      required:
+      - appComponentSpecs
+      - appId
+      - appMetaData
+      - appProviderId
+      - appQoSProfile
+      - appStatusCallbackLink
+      type: object
+      properties:
+        appId:
+          $ref: '#/components/schemas/AppIdentifier'
+        appProviderId:
+          $ref: '#/components/schemas/AppProviderId'
+        appDeploymentZones:
+          minItems: 1
+          type: array
+          description: Details about partner OP zones where the application should
+            be made available;  This field when specified will instruct the OP to
+            restrict application instantiation only on the listed zones.
+          items:
+            $ref: '#/components/schemas/ZoneIdentifier'
+        appMetaData:
+          $ref: '#/components/schemas/AppMetaData'
+        appQoSProfile:
+          $ref: '#/components/schemas/AppQoSProfile'
+        appComponentSpecs:
+          $ref: '#/components/schemas/AppComponentSpecs'
+        appStatusCallbackLink:
+          $ref: '#/components/schemas/Uri'
+    inline_response_200_7:
+      required:
+      - appComponentSpecs
+      - appDeploymentZones
+      - appId
+      - appMetaData
+      - appProviderId
+      - appQoSProfile
+      type: object
+      properties:
+        appId:
+          $ref: '#/components/schemas/AppIdentifier'
+        appProviderId:
+          $ref: '#/components/schemas/AppProviderId'
+        appDeploymentZones:
+          minItems: 1
+          type: array
+          description: Details about partner OP zones where the application should
+            be made available;  This field when specified will instruct the OP to
+            restrict application instantiation only on the listed zones.
+          items:
+            $ref: '#/components/schemas/inline_response_200_7_appDeploymentZones'
+        appMetaData:
+          $ref: '#/components/schemas/AppMetaData'
+        appQoSProfile:
+          $ref: '#/components/schemas/AppQoSProfile'
+        appComponentSpecs:
+          $ref: '#/components/schemas/AppComponentSpecs'
+      example:
+        appMetaData:
+          appName: appName
+          mobilitySupport: false
+          appDescription: appDescription
+          accessToken: accessToken
+          category: IOT
+          version: version
+        appProviderId: appProviderId
+        appId: appId
+        appQoSProfile:
+          bandwidthRequired: 1
+          multiUserClients: APP_TYPE_SINGLE_USER
+          noOfUsersPerAppInst: 6
+          latencyConstraints: NONE
+          appProvisioning: true
+        appDeploymentZones:
+        - zoneInfo: zoneInfo
+          countryCode: countryCode
+        - zoneInfo: zoneInfo
+          countryCode: countryCode
+        appComponentSpecs:
+        - serviceNameEW: serviceNameEW
+          serviceNameNB: serviceNameNB
+          artefactId: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          componentName: componentName
+        - serviceNameEW: serviceNameEW
+          serviceNameNB: serviceNameNB
+          artefactId: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          componentName: componentName
+    federationContextIdapplicationonboardingappappId_appUpdQoSProfile:
+      type: object
+      properties:
+        latencyConstraints:
+          type: string
+          description: "Latency requirements for the application.Allowed values (non-standardized)\
+            \ are none, low and ultra-low. Ultra-Low may corresponds to range 15 -\
+            \ 30 msec, Low correspond to range 30 - 50 msec. None means 51 and above"
+          enum:
+          - NONE
+          - LOW
+          - ULTRALOW
+        bandwidthRequired:
+          minimum: 1
+          type: integer
+          description: Data transfer bandwidth requirement (minimum limit) for the
+            application. It should in Mbits/sec
+          format: int32
+        mobilitySupport:
+          type: boolean
+          description: Indicates if an application is sensitive to user mobility and
+            can be relocated. Default is “FALSE”
+          default: false
+        multiUserClients:
+          type: string
+          description: Single user type application are designed to serve just one
+            client. Multi user type application is designed to serve multiple clients
+          enum:
+          - APP_TYPE_SINGLE_USER
+          - APP_TYPE_MULTI_USER
+        noOfUsersPerAppInst:
+          type: integer
+          description: Maximum no of clients that can connect to an instance of this
+            application. This parameter is relevant only for application of type multi
+            user
+          default: 1
+        appProvisioning:
+          type: boolean
+          description: Define if application can be instantiated or not
+          default: true
+      description: "Parameters corresponding to the performance constraints, tenancy\
+        \ details etc."
+    federationContextIdapplicationonboardingappappId_appComponentSpecs:
+      required:
+      - componentName
+      type: object
+      properties:
+        serviceNameNB:
+          pattern: "^[A-Za-z0-9][A-Za-z0-9_]{6,62}[A-Za-z0-9]$"
+          type: string
+          description: Must be a valid RFC 1035 label name.  This defines the DNS
+            name via which the component can be accessed over NBI. Access via serviceNameNB
+            is restricted on specific ports. Platform shall expose component access
+            externally via this DNS name
+        serviceNameEW:
+          pattern: "^[A-Za-z0-9][A-Za-z0-9_]{6,62}[A-Za-z0-9]$"
+          type: string
+          description: Must be a valid RFC 1035 label name.  This defines the DNS
+            name via which the component can be accessed via peer components. Access
+            via serviceNameEW is open on all ports.   Platform shall not expose serviceNameEW
+            externally outside edge.
+        componentName:
+          pattern: "^[A-Za-z0-9][A-Za-z0-9_]{6,62}[A-Za-z0-9]$"
+          type: string
+          description: Must be a valid RFC 1035 label name.  Component name must be
+            unique with an application
+        artefactId:
+          $ref: '#/components/schemas/ArtefactId'
+    app_appId_body:
+      minProperties: 1
+      type: object
+      properties:
+        appUpdQoSProfile:
+          $ref: '#/components/schemas/federationContextIdapplicationonboardingappappId_appUpdQoSProfile'
+        appComponentSpecs:
+          minItems: 1
+          type: array
+          description: "An application may consist of more than one component. Each\
+            \ component is associated with a descriptor and may exposes its services\
+            \ externally or internally.  App providers are required to provide details\
+            \ about all these components, their associated descriptors and their DNS\
+            \ names."
+          items:
+            $ref: '#/components/schemas/federationContextIdapplicationonboardingappappId_appComponentSpecs'
+    appId_zoneForbid_body:
+      minItems: 1
+      required:
+      - forbid
+      - zoneId
+      type: array
+      properties:
+        zoneId:
+          $ref: '#/components/schemas/ZoneIdentifier'
+        forbid:
+          type: boolean
+          description: Value 'true' will forbid application instantiation on this
+            zone.  No new instance of the application can be created on this zone.
+      items:
+        type: object
+        description: List of zones where application instantiation shall be forbidden
+          or allowed.
+    federationContextIdapplicationlcm_zoneInfo:
+      required:
+      - flavourId
+      #- zoneId
+      type: object
+      properties:
+        zoneId:
+          type: string
+          #$ref: '#/components/schemas/ZoneIdentifier'
+        flavourId:
+          $ref: '#/components/schemas/FlavourId'
+        resourceConsumption:
+          type: string
+          description: "Specifies if the application can be instantiated using pre-reserved\
+            \ resource or not.  App provider can pre-reserve a pool of compute resource\
+            \ on each zone.  'RESERVED_RES_SHALL' instruct OP to use only the pre-reserved\
+            \ resources. 'RESERVED_RES_PREFER' instruct to first try using pre-reserved\
+            \ resource, if none available go for non-reserved resources. 'RESERVED_RES_AVOID'\
+            \ instruct OP not to use pre-reserved resource if possible, it is a choice\
+            \ depending upon circumstances 'RESERVED_RES_FORBID' instruct OP not to\
+            \ use pre-reserved resources."
+          default: RESERVED_RES_AVOID
+          enum:
+          - RESERVED_RES_SHALL
+          - RESERVED_RES_PREFER
+          - RESERVED_RES_AVOID
+          - RESERVED_RES_FORBID
+        resPool:
+          pattern: "^[A-Za-z0-9][A-Za-z0-9_]{6,30}[A-Za-z0-9]$"
+          type: string
+          description: Resource pool to be used for application instantiation on this
+            zone.  Valid only if IE 'resourceConsumption' is set to 'RESERVED_RES_SHALL'
+            or 'RESERVED_RES_PREFER'
+    application_lcm_body:
+      required:
+      - appId
+      - appInstCallbackLink
+      - appProviderId
+      - appVersion
+      - zoneInfo
+      type: object
+      properties:
+        appId:
+          $ref: '#/components/schemas/AppIdentifier'
+        appVersion:
+          type: string
+          description: Version info of the application
+        appProviderId:
+          $ref: '#/components/schemas/AppProviderId'
+        zoneInfo:
+          $ref: '#/components/schemas/federationContextIdapplicationlcm_zoneInfo'
+        appInstCallbackLink:
+          $ref: '#/components/schemas/Uri'
+    inline_response_202:
+      required:
+      - appInstIdentifier
+      - zoneId
+      type: object
+      properties:
+        zoneId:
+          $ref: '#/components/schemas/ZoneIdentifier'
+        appInstIdentifier:
+          $ref: '#/components/schemas/InstanceIdentifier'
+      example:
+        appInstIdentifier: appInstIdentifier
+        zoneId: zoneId
+    inline_response_200_8:
+      minProperties: 1
+      type: object
+      properties:
+        appInstanceState:
+          $ref: '#/components/schemas/InstanceState'
+        accesspointInfo:
+          minItems: 1
+          type: array
+          description: Information about the IP and Port exposed by the OP. Application
+            clients shall use these access points to reach this application instance
+          items:
+            $ref: '#/components/schemas/inline_response_200_8_accesspointInfo'
+      example:
+        appInstanceState: PENDING
+        accesspointInfo:
+        - interfaceId: interfaceId
+          accessPoints:
+            ipv4Addresses:
+            - 198.51.100.1
+            - 198.51.100.1
+            port: 0
+            fqdn: fqdn
+            ipv6Addresses:
+            - 2001:db8:85a3::8a2e:370:7334
+            - 2001:db8:85a3::8a2e:370:7334
+        - interfaceId: interfaceId
+          accessPoints:
+            ipv4Addresses:
+            - 198.51.100.1
+            - 198.51.100.1
+            port: 0
+            fqdn: fqdn
+            ipv6Addresses:
+            - 2001:db8:85a3::8a2e:370:7334
+            - 2001:db8:85a3::8a2e:370:7334
+    federationContextIdapplicationlcmappappIdappProviderappProviderId_appInstanceInfo:
+      required:
+      - appInstIdentifier
+      - appInstanceState
+      type: object
+      properties:
+        appInstIdentifier:
+          $ref: '#/components/schemas/InstanceIdentifier'
+        appInstanceState:
+          $ref: '#/components/schemas/InstanceState'
+      example:
+        appInstIdentifier: appInstIdentifier
+        appInstanceState: PENDING
+    inline_response_200_9:
+      required:
+      - appInstanceInfo
+      - zoneId
+      type: object
+      properties:
+        zoneId:
+          $ref: '#/components/schemas/ZoneIdentifier'
+        appInstanceInfo:
+          minItems: 1
+          type: array
+          items:
+            $ref: '#/components/schemas/federationContextIdapplicationlcmappappIdappProviderappProviderId_appInstanceInfo'
+      example:
+        appInstanceInfo:
+        - appInstIdentifier: appInstIdentifier
+          appInstanceState: PENDING
+        - appInstIdentifier: appInstIdentifier
+          appInstanceState: PENDING
+        zoneId: zoneId
+    AppComponentSpecs_inner:
+      required:
+      - artefactId
+      type: object
+      properties:
+        serviceNameNB:
+          pattern: "^[A-Za-z0-9][A-Za-z0-9_]{6,62}[A-Za-z0-9]$"
+          type: string
+          description: Must be a valid RFC 1035 label name. This defines the DNS name
+            via which the component can be accessed over NBI. Access via serviceNameNB
+            is restricted on specific ports. Platform shall expose component access
+            externally via this DNS name
+        serviceNameEW:
+          pattern: "^[A-Za-z0-9][A-Za-z0-9_]{6,62}[A-Za-z0-9]$"
+          type: string
+          description: Must be a valid RFC 1035 label name. This defines the DNS name
+            via which the component can be accessed via peer components. Access via
+            serviceNameEW is open on all ports.   Platform shall not expose serviceNameEW
+            externally outside edge.
+        componentName:
+          pattern: "^[A-Za-z0-9][A-Za-z0-9_]{6,62}[A-Za-z0-9]$"
+          type: string
+          description: Must be a valid RFC 1035 label name.  Component name must be
+            unique with an application
+        artefactId:
+          $ref: '#/components/schemas/ArtefactId'
+      example:
+        serviceNameEW: serviceNameEW
+        serviceNameNB: serviceNameNB
+        artefactId: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        componentName: componentName
+    ZoneRegisteredData_networkResources:
+      required:
+      - dedicatedNIC
+      - egressBandWidth
+      - supportDPDK
+      - supportSriov
+      type: object
+      properties:
+        egressBandWidth:
+          type: integer
+          description: Max dl throughput that this edge can offer. It is defined in
+            Mbps.
+          format: int32
+        dedicatedNIC:
+          type: integer
+          description: Number of network interface cards which can be dedicatedly
+            assigned to application pods on isolated networks. This includes virtual
+            as well physical NICs
+          format: int32
+        supportSriov:
+          type: boolean
+          description: If this zone support SRIOV networks or not
+        supportDPDK:
+          type: boolean
+          description: If this zone supports DPDK based networking.
+      example:
+        supportDPDK: true
+        supportSriov: true
+        egressBandWidth: 1
+        dedicatedNIC: 1
+    ZoneRegisteredData_zoneServiceLevelObjsInfo_latencyRanges:
+      type: object
+      properties:
+        minLatency:
+          minimum: 1
+          type: integer
+          description: The time for data/packet to reach from UC to edge application.
+            It represent mínimum latency in milli seconds that may exist between UCs
+            and edge apps in this zone but it can be higher in actual.
+          format: int32
+        maxLatency:
+          type: integer
+          description: The maximum limit of latency between UC and Edge App in milli
+            seconds.
+          format: int32
+      example:
+        minLatency: 1
+        maxLatency: 6
+    ZoneRegisteredData_zoneServiceLevelObjsInfo_jitterRanges:
+      type: object
+      properties:
+        minJitter:
+          minimum: 1
+          type: integer
+          format: int32
+        maxJitter:
+          type: integer
+          description: The maximum limit of network jitter between UC and Edge App
+            in milli seconds.
+          format: int32
+      example:
+        maxJitter: 1
+        minJitter: 1
+    ZoneRegisteredData_zoneServiceLevelObjsInfo_throughputRanges:
+      type: object
+      properties:
+        minThroughput:
+          minimum: 1
+          type: integer
+          description: The minimum limit of network throughput between UC and Edge
+            App in Mega bits per seconds (Mbps).
+          format: int32
+        maxThroughput:
+          type: integer
+          description: The maximum limit of network throughput between UC and Edge
+            App in Mega bits per seconds (Mbps).
+          format: int32
+      example:
+        minThroughput: 1
+        maxThroughput: 5
+    ZoneRegisteredData_zoneServiceLevelObjsInfo:
+      required:
+      - jitterRanges
+      - latencyRanges
+      - throughputRanges
+      type: object
+      properties:
+        latencyRanges:
+          $ref: '#/components/schemas/ZoneRegisteredData_zoneServiceLevelObjsInfo_latencyRanges'
+        jitterRanges:
+          $ref: '#/components/schemas/ZoneRegisteredData_zoneServiceLevelObjsInfo_jitterRanges'
+        throughputRanges:
+          $ref: '#/components/schemas/ZoneRegisteredData_zoneServiceLevelObjsInfo_throughputRanges'
+      description: It is a measure of the actual amount of data that is being sent
+        over a network per unit of time and indicates máximum supported value for
+        a zone
+      example:
+        latencyRanges:
+          minLatency: 1
+          maxLatency: 6
+        jitterRanges:
+          maxJitter: 1
+          minJitter: 1
+        throughputRanges:
+          minThroughput: 1
+          maxThroughput: 5
+    inline_response_200_7_appDeploymentZones:
+      required:
+      - countryCode
+      - zoneInfo
+      type: object
+      properties:
+        countryCode:
+          $ref: '#/components/schemas/CountryCode'
+        zoneInfo:
+          $ref: '#/components/schemas/ZoneIdentifier'
+      example:
+        zoneInfo: zoneInfo
+        countryCode: countryCode
+    inline_response_200_8_accesspointInfo:
+      required:
+      - accessPoints
+      - interfaceId
+      type: object
+      properties:
+        interfaceId:
+          pattern: "^[A-Za-z0-9][A-Za-z0-9_]{6,30}[A-Za-z0-9]$"
+          type: string
+          description: This is the interface identifier that app provider defines
+            when application is onboarded.
+        accessPoints:
+          $ref: '#/components/schemas/ServiceEndpoint'
+      example:
+        interfaceId: interfaceId
+        accessPoints:
+          ipv4Addresses:
+          - 198.51.100.1
+          - 198.51.100.1
+          port: 0
+          fqdn: fqdn
+          ipv6Addresses:
+          - 2001:db8:85a3::8a2e:370:7334
+          - 2001:db8:85a3::8a2e:370:7334
+  responses:
+    "400":
+      description: Bad request
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    "401":
+      description: Unauthorized
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    "404":
+      description: Not Found
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    "409":
+      description: Conflict
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    "412":
+      description: Precondition Failed
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    "422":
+      description: Unprocessable Entity
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    "500":
+      description: Internal Server Error
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    "501":
+      description: Not Implemented
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    "503":
+      description: Service Unavailable
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    "520":
+      description: Web Server Returned an Unknown Error
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    default:
+      description: Generic Error
+  securitySchemes:
+    oAuth2ClientCredentials:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: http://127.0.0.1:8080/realms/federation/protocol/openid-connect/token
+          scopes:
+            fed-mgmt: Access to the federation APIs
+      x-tokenInfoFunc: controllers.authorization_controller.check_oAuth2ClientCredentials
+      x-scopeValidateFunc: controllers.authorization_controller.validate_scope_oAuth2ClientCredentials
