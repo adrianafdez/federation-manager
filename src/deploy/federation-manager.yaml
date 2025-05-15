@@ -1,0 +1,78 @@
+---
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: federation-manager
+  labels:
+    name: federation-manager
+---
+kind: Secret
+apiVersion: v1
+metadata:
+  name: federation-manager-config
+  namespace: federation-manager
+data:
+  config.cfg: >-
+    W2tleWNsb2FrXQ0KY2xpZW50MV9pZCA9IG9yaWdpbmF0aW5nLW9wLTENCmNsaWVudDFfc2VjcmV0ID0gZGQ3dk53RnFqTnBZd2FnaGxFd01idzEwZzBrbFdESGINCmNsaWVudDJfaWQgPSBvcmlnaW5hdGluZy1vcC0yDQpjbGllbnQyX3NlY3JldCA9IDJtaHpuRVJmV2NsTER1Vm9qWTc3THA0UWQycjRlOE1zDQpzY29wZSA9IGZlZC1tZ210DQoNCltzZXJ2ZXJdDQpob3N0ID0gMTI3LjAuMC4xDQpwb3J0ID0gODk4OQ0KcHJlZml4ID0gYXBpDQp2ZXJzaW9uID0gdjEuMA0KcHJvdG9jb2wgPSBodHRwDQoNClttb25nb2RiXQ0KaG9zdCA9IG1vbmdvZGIubW9uZ29kYi5zdmMuY2x1c3Rlci5sb2NhbA0KcG9ydCA9IDI3MDE3DQoNCltpMmVkZ2VdDQpob3N0ID0gMTkyLjE2OC4xMjMuMjM3DQpwb3J0ID0gMzA3NjANCg0KW29wX2RhdGFdDQpwYXJ0bmVyT1BGZWRlcmF0aW9uSWQgPSBpMmNhdA0KcGFydG5lck9QQ291bnRyeUNvZGUgPSBFUw0KcGFydG5lck9QTW9iaWxlTmV0d29ya0NvZGVfTUNDID0gMDAxDQpwYXJ0bmVyT1BNb2JpbGVOZXR3b3JrQ29kZV9NTkMgPSAwMQ0KcGFydG5lck9QRml4ZWROZXR3b3JrQ29kZSA9IDM0DQpwbGF0Zm9ybUNhcHMgPSBob21lUm91dGluZw0KO1RoZSBFZGdlIGRpc2NvdmVyeSBzZXJ2aWNlIGlzIGRlZmluZWQgYXMgYSBIVFRQLWJhc2VkIEFQSSBlbmRwb2ludCBpZGVudGlmaWVkIGJ5IGEgd2VsbC1kZWZpbmVkIEZRRE4gb3IgSVAtYWRkcmVzcywNCjtQb3J0IHBhaXIgdG8gYXNzaXN0IFVDcyB0byBkaXNjb3ZlciBhZGVxdWF0ZSBFZGdlIENsb3VkIGluIHRoZSBjdXJyZW50IGxvY2F0aW9uIG9mIHRoZSBlbmQgdXNlcnMuDQo7T1Agc2VydmljZSBpZGVudGlmaWVkIGJ5IGEgd2VsbC1kZWZpbmVkIEZ1bGx5IFF1YWxpZmllZCBEb21haW4gTmFtZSAoRlFETikgb3IgSVA6UG9ydCBhbmQgcHJvdG9jb2wgcGFpciB0byBhc3Npc3QNCjtVc2VyIENsaWVudHMgKFVDcykgb3ZlciBVc2VyIE5ldHdvcmsgSW50ZXJmYWNlIChVTkkpIHRvIGRpc2NvdmVyIGFkZXF1YXRlIGVkZ2UgY2xvdWQgaW4gdGhlIGN1cnJlbnQgbG9jYXRpb24gb2YgdGhlDQo7ZW5kIHVzZXJzLg0KO0V2ZXJ5IE9QIG1heSBob3N0IGEgcHVibGljbHkgYWNjZXNzaWJsZSBkaXNjb3Zlcnkgc2VydmljZSB3aGljaCBjYW4gYmUgcmVhY2hlZCBieSB0aGUgVUNzIG92ZXIgdGhlIFVOSSB0byBlbnF1aXJlIGFib3V0DQo7dGhlIG5lYXJieSBhcHBsaWNhdGlvbiBpbnN0YW5jZShzKS4NCjtFLmcuLCBkaXNjb3Zlcnkub3BlcmF0b3IxLmNvbSBvciBJUHY0QWRkciBQb3J0IChpbiBkb3R0ZWQgZGVjaW1hbCBub3RhdGlvbikuDQplZGdlRGlzY292ZXJ5U2VydmljZUVuZFBvaW50X3BvcnQgPQ0KZWRnZURpc2NvdmVyeVNlcnZpY2VFbmRQb2ludF9mcWRuID0gZGlzY292ZXJ5Lm9wZXJhdG9yMS5jb20NCmVkZ2VEaXNjb3ZlcnlTZXJ2aWNlRW5kUG9pbnRfaXB2NEFkZHJlc3NlcyA9DQplZGdlRGlzY292ZXJ5U2VydmljZUVuZFBvaW50X2lwdjZBZGRyZXNzZXMgPQ0KO0xpZmVjeWNsZSBNYW5hZ2VtZW50IChMQ00pIFNlcnZpY2UgdG8gZW5hYmxlIFVDcyBmb3IgcmVxdWVzdGluZyBkeW5hbWljIGFwcGxpY2F0aW9uIGluc3RhbnRpYXRpb24gb3IgdGVybWluYXRpb24NCmxjbVNlcnZpY2VFbmRQb2ludF9wb3J0ID0gODk4OQ0KbGNtU2VydmljZUVuZFBvaW50X2ZxZG4gPQ0KbGNtU2VydmljZUVuZFBvaW50X2lwdjRBZGRyZXNzZXMgPSAxMjcuMC4wLjENCmxjbVNlcnZpY2VFbmRQb2ludF9pcHY2QWRkcmVzc2VzID0NCg==
+type: Opaque
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  labels:
+    app: federation-manager
+  name: federation-manager-app
+  namespace: federation-manager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: federation-manager
+  template:
+    metadata:
+      labels:
+        app: federation-manager
+    spec:
+      containers:
+      - name: federation-manager
+        image: ghcr.io/sunriseopenoperatorplatform/federation-manager:0.0.1
+        imagePullPolicy: Always
+        volumeMounts:
+          - name: config
+            readOnly: false
+            mountPath: /usr/app/src/conf/
+        ports:
+        - containerPort: 8989
+          protocol: TCP
+        resources:
+          requests:
+            cpu: "2"
+            memory: "4Gi"
+          limits:
+            cpu: "4"
+            memory: "6Gi"
+      imagePullSecrets:
+      - name: federation-manager-regcred
+      volumes:
+        - name: config
+          secret:
+            secretName: federation-manager-config
+            defaultMode: 420
+---
+kind: Service
+apiVersion: v1
+metadata:
+  labels:
+    app: federation-manager
+  name: federation-manager-svc
+  namespace: federation-manager
+spec:
+  type: NodePort
+  ports:
+  - name: http
+    port: 8989
+    protocol: TCP
+    targetPort: 8989
+    nodePort: 30989
+  selector:
+    app: federation-manager

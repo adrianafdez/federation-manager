@@ -1,0 +1,85 @@
+---
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: federation-manager
+  labels:
+    name: federation-manager
+---
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: mongodb
+spec:
+  capacity:
+    storage: 1Gi
+  hostPath:
+    path: /tmp/db
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: mongodb
+  namespace: federation-manager
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  volumeName: mongodb
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: mongodb
+  namespace: federation-manager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongodb
+  template:
+    metadata:
+      labels:
+        app: mongodb
+    spec:
+      volumes:
+        - name: storage
+          persistentVolumeClaim:
+            claimName: mongodb
+      containers:
+        - name: mongodb
+          image: 'mongo:7.0'
+          ports:
+            - containerPort: 27017
+              protocol: TCP
+          env:
+            - name: MONGO_INITDB_DATABASE
+              value: federation-manager
+            - name: MONGODB_DATA_DIR
+              value: /data/db
+            - name: MONDODB_LOG_DIR
+              value: /dev/null
+          volumeMounts:
+            - name: storage
+              mountPath: /data/db
+          imagePullPolicy: IfNotPresent
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: mongodb
+  namespace: federation-manager
+spec:
+  type: NodePort
+  ports:
+    - protocol: TCP
+      port: 27017
+      targetPort: 27017
+      nodePort: 30017
+  selector:
+    app: mongodb
