@@ -57,7 +57,7 @@ class BaseTestCase(TestCase):
 
     def get_access_token(self):
         # URL to obtain access token from Keycloak
-        token_url = f"http://{HOST_KEYCLOAK}:{PORT_KEYCLOAK}/auth/realms/mec-federation/protocol/openid-connect/token"
+        token_url = f"http://{HOST_KEYCLOAK}:{PORT_KEYCLOAK}/auth/realms/federation/protocol/openid-connect/token"
 
         payload = {
             "client_id": self.client_id,
